@@ -45,7 +45,7 @@ async def update_control_panel():
         if bot.mimic:
             mimic_text = f"Mimicking: {bot.mimic.display_name}"
         else:
-            mimic_text = "Not mimicking anyone! React to :copyright: to mimic you!"
+            mimic_text = "Not mimicking anyone! React with :copyright: to mimic you!"
         await bot.control_panel.edit(content=f"Members in Among Us:\n```{member_list}\n```{mimic_text}")
 
 async def set_mute(mute_state, check_managed=True):
