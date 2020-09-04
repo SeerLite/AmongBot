@@ -7,6 +7,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_ID = 691468513239367761
 VOICE_CHANNEL = "Among Us"
 TEXT_CHANNEL = "litebot"
+EXCLUDE_ROLE = "Music Bots"
 
 bot = commands.Bot(command_prefix="lt:")
 
@@ -26,7 +27,7 @@ async def on_ready():
     bot.litebot_channel = discord.utils.get(bot.managed_guild.text_channels, name=TEXT_CHANNEL)
     bot.among_us_vc = discord.utils.get(bot.managed_guild.voice_channels, name=VOICE_CHANNEL)
     bot.tracked_members = bot.among_us_vc.members
-    bot.tracked_members = list(filter(lambda m: not discord.utils.get(m.roles, name="Music Bots"), bot.tracked_members))
+    bot.tracked_members = list(filter(lambda m: not discord.utils.get(m.roles, name=EXCLUDE_ROLE), bot.tracked_members))
     bot.tracked_members = [dict(member=member, is_visible=True) for member in bot.tracked_members] # convert to dicts
     await send_control_panel()
 
@@ -51,7 +52,7 @@ async def set_mute(mute_state, check_managed=True):
     members = bot.among_us_vc.members
     if bot.mimic:
         members.remove(bot.mimic) # filter out mimicked member
-    members = list(filter(lambda m: not discord.utils.get(m.roles, name="Music Bots"), members)) # filter out Music Bots
+    members = list(filter(lambda m: not discord.utils.get(m.roles, name=EXCLUDE_ROLE), members)) # filter out Music Bots
     members = list(filter(lambda m: m.voice.mute != mute_state, members)) # filter out users already server-muted/unmuted
     if mute_state:
         bot.managed_mutes += members
@@ -85,7 +86,7 @@ async def set_mimic(member):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    if discord.utils.get(member.roles, name="Music Bots"):
+    if discord.utils.get(member.roles, name=EXCLUDE_ROLE):
         return
     if member == bot.mimic:
         if after.channel == bot.among_us_vc: # Status changed inside channel
