@@ -54,6 +54,7 @@ async def send_control_panel():
     bot.control_panel = await bot.litebot_channel.send("```\n```")
     await bot.control_panel.add_reaction('🔈')
     await bot.control_panel.add_reaction('©')
+    await bot.control_panel.add_reaction('💩')
     await update_control_panel()
 
 async def update_control_panel():
@@ -133,6 +134,10 @@ async def on_reaction_add(reaction, member):
                 await set_mimic(member)
             elif member == bot.mimic:
                 await set_mimic(None)
+        elif reaction.emoji == '💩':
+            for tracked_member in bot.tracked_members:
+                tracked_member.is_dead = False
+                await set_mute(False)
     await reaction.remove(member)
 
 bot.run(TOKEN)
