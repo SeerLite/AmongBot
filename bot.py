@@ -3,7 +3,14 @@ import discord
 from discord.ext import commands
 import asyncio
 
-TOKEN = os.getenv("DISCORD_TOKEN")
+if not (TOKEN := os.getenv("DISCORD_TOKEN")):
+    try:
+        with open(".token") as token_file:
+            TOKEN = token_file.read()
+    except FileNotFoundError:
+        print("No .token file found! Please create it or pass it through DISCORD_TOKEN environment variable.")
+        exit(1)
+
 GUILD_ID = 691468513239367761
 VOICE_CHANNEL = "Among Us"
 TEXT_CHANNEL = "litebot"
