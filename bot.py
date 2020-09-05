@@ -75,7 +75,6 @@ async def update_control_panel():
         await bot.control_panel.edit(content=f"**Muting:** {'Yes' if bot.is_muting else 'No'}\nMembers in Among Us:\n```{member_list}\n```{mimic_text}")
 
 async def set_mute(mute_state):
-    time_taken = time.time()
     bot.is_muting = mute_state
     tasks = []
     for tracked_member in bot.tracked_members:
@@ -87,8 +86,6 @@ async def set_mute(mute_state):
             else:
                 tasks.append(tracked_member.member.edit(mute=mute_state, deafen=mute_state))
     await asyncio.gather(*tasks)
-    time_taken = time.time() - time_taken
-    print(time_taken)
 
 async def set_mimic(member):
     if member:
@@ -138,12 +135,8 @@ async def on_reaction_add(reaction, member):
         return
     if reaction.message.id == bot.control_panel.id:
         if reaction.emoji == '🔈':
-            if bot.is_muting:
-                await set_mute(False)
-                await update_control_panel()
-            else:
-                await set_mute(True)
-                await update_control_panel()
+            await set_mute(not bot.is_muting)
+            await update_control_panel()
         elif reaction.emoji == '©':
             if bot.mimic is None:
                 await set_mimic(member)
