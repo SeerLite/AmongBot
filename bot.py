@@ -104,6 +104,7 @@ async def on_voice_state_update(member, before, after):
                 await set_mute(after.self_deaf)
         else:                                # Whoops, not in channel anymore?
             await set_mimic(None)
+    # TODO: optimize this. it's called n times each time set_mute is done. n is the amount of members in vc
     if after.channel == bot.among_us_vc:
         if not member in [tracked_member.member for tracked_member in bot.tracked_members]:
             bot.tracked_members.append(Tracked_member(member))

@@ -1,0 +1,18 @@
+do #TODOS in code
+
+reaction: join
+    joins the voice channel
+    when joined, plays sounds before muting and after unmuting everyone
+
+when everyone leaves vc:
+    unmute all managed members
+    forget all tracked members
+
+# still thinking about this
+rename set_mute() to toggle_mute()
+    create new update_mute() to replicate old set_mute(True)
+
+take out update_control_panel() from set_mute(). manually call it after calling set_mute()
+
+add agplv3 license
+
