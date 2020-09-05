@@ -21,6 +21,7 @@ bot = commands.Bot(command_prefix="lt:")
 bot.managed_guild = None
 bot.among_us_vc = None
 bot.litebot_channel = None
+bot.exclude_role = None
 
 bot.mimic = None
 bot.is_muting = False
@@ -39,8 +40,9 @@ async def on_ready():
     bot.managed_guild = discord.utils.get(bot.guilds, id=GUILD_ID)
     bot.litebot_channel = discord.utils.get(bot.managed_guild.text_channels, name=TEXT_CHANNEL)
     bot.among_us_vc = discord.utils.get(bot.managed_guild.voice_channels, name=VOICE_CHANNEL)
+    bot.excluded_role = discord.utils.get(bot.managed_guild.roles, name=EXCLUDE_ROLE)
     bot.tracked_members = bot.among_us_vc.members
-    bot.tracked_members = list(filter(lambda m: not discord.utils.get(m.roles, name=EXCLUDE_ROLE), bot.tracked_members))
+    bot.tracked_members = list(filter(lambda m: not bot.excluded_role in m.roles, bot.tracked_members))
     bot.tracked_members = [Tracked_member(member) for member in bot.tracked_members] # convert to dicts
     await send_control_panel()
 
@@ -103,7 +105,7 @@ async def set_mimic(member):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    if discord.utils.get(member.roles, name=EXCLUDE_ROLE):
+    if bot.excluded_role in member.roles:
         return
     if member == bot.mimic:
         if after.channel == bot.among_us_vc: # Status changed inside channel
