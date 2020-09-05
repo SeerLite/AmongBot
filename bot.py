@@ -137,7 +137,7 @@ async def on_reaction_add(reaction, member):
         elif reaction.emoji == '💩':
             for tracked_member in bot.tracked_members:
                 tracked_member.is_dead = False
-                await set_mute(False)
+            await set_mute(False)
     await reaction.remove(member)
 
 bot.run(TOKEN)
