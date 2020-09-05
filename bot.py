@@ -1,7 +1,6 @@
-import os
+import os, sys, asyncio
 import discord
 from discord.ext import commands
-import asyncio
 
 if not (TOKEN := os.getenv("DISCORD_TOKEN")):
     try:
@@ -9,7 +8,7 @@ if not (TOKEN := os.getenv("DISCORD_TOKEN")):
             TOKEN = token_file.read()
     except FileNotFoundError:
         print("No .token file found! Please create it or pass it through DISCORD_TOKEN environment variable.")
-        exit(1)
+        sys.exit(1)
 
 GUILD_ID = 691468513239367761
 VOICE_CHANNEL = "Among Us"
