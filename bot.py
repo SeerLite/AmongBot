@@ -1,6 +1,6 @@
 import os, sys, asyncio
 import discord
-from discord.ext import commands
+#from discord.ext import commands
 import time
 
 if not (TOKEN := os.getenv("DISCORD_TOKEN")):
@@ -16,17 +16,17 @@ VOICE_CHANNEL = "Among Us"
 TEXT_CHANNEL = "litebot"
 EXCLUDE_ROLE = "Music Botss"
 
-bot = commands.Bot(command_prefix="lt:")
+client = discord.Client()
 
-bot.managed_guild = None
-bot.among_us_vc = None
-bot.litebot_channel = None
-bot.exclude_role = None
+client.managed_guild = None
+client.among_us_vc = None
+client.litebot_channel = None
+client.exclude_role = None
 
-bot.mimic = None
-bot.is_muting = False
-bot.tracked_members = []
-bot.control_panel = None
+client.mimic = None
+client.is_muting = False
+client.tracked_members = []
+client.control_panel = None
 
 class Tracked_member():
     def __init__(self, member, is_listed=True, is_dead=False):
@@ -34,56 +34,56 @@ class Tracked_member():
         self.is_listed = is_listed
         self.is_dead = is_dead
 
-@bot.event
+@client.event
 async def on_ready():
     print("Bot is online.")
-    bot.managed_guild = discord.utils.get(bot.guilds, id=GUILD_ID)
-    bot.litebot_channel = discord.utils.get(bot.managed_guild.text_channels, name=TEXT_CHANNEL)
-    bot.among_us_vc = discord.utils.get(bot.managed_guild.voice_channels, name=VOICE_CHANNEL)
-    bot.excluded_role = discord.utils.get(bot.managed_guild.roles, name=EXCLUDE_ROLE)
-    bot.tracked_members = bot.among_us_vc.members
-    bot.tracked_members = list(filter(lambda m: not bot.excluded_role in m.roles, bot.tracked_members))
-    bot.tracked_members = [Tracked_member(member) for member in bot.tracked_members] # convert to dicts
+    client.managed_guild = discord.utils.get(client.guilds, id=GUILD_ID)
+    client.litebot_channel = discord.utils.get(client.managed_guild.text_channels, name=TEXT_CHANNEL)
+    client.among_us_vc = discord.utils.get(client.managed_guild.voice_channels, name=VOICE_CHANNEL)
+    client.excluded_role = discord.utils.get(client.managed_guild.roles, name=EXCLUDE_ROLE)
+    client.tracked_members = client.among_us_vc.members
+    client.tracked_members = list(filter(lambda m: not client.excluded_role in m.roles, client.tracked_members))
+    client.tracked_members = [Tracked_member(member) for member in client.tracked_members] # convert to dicts
     await send_control_panel()
 
-@bot.event
+@client.event
 async def on_message(message):
-    if message.author == bot.user or message.channel != bot.litebot_channel:
+    if message.author == client.user or message.channel != client.litebot_channel:
         return
     if message.content.isdigit():
         index = int(message.content) - 1
-        if index in range(len(bot.tracked_members)):
+        if index in range(len(client.tracked_members)):
             await message.delete()
-            bot.tracked_members[index].is_dead = not bot.tracked_members[index].is_dead
-            await set_mute(bot.is_muting)
+            client.tracked_members[index].is_dead = not client.tracked_members[index].is_dead
+            await set_mute(client.is_muting)
             await update_control_panel()
 
 async def send_control_panel():
-    if bot.control_panel:
-        await bot.control_panel.delete()
-    bot.control_panel = await bot.litebot_channel.send("```\n```")
-    await bot.control_panel.add_reaction('🔈')
-    await bot.control_panel.add_reaction('©')
-    await bot.control_panel.add_reaction('🔄')
+    if client.control_panel:
+        await client.control_panel.delete()
+    client.control_panel = await client.litebot_channel.send("```\n```")
+    await client.control_panel.add_reaction('🔈')
+    await client.control_panel.add_reaction('©')
+    await client.control_panel.add_reaction('🔄')
     await update_control_panel()
 
 async def update_control_panel():
-    if bot.control_panel:
-        member_list = "\n".join((str(bot.tracked_members.index(tracked_member) + 1) + ": " + tracked_member.member.display_name + (" (DEAD)" if tracked_member.is_dead else "") for tracked_member in filter(lambda m: m.is_listed, bot.tracked_members)))
-        if bot.mimic:
-            mimic_text = f"Mimicking: {bot.mimic.display_name}"
+    if client.control_panel:
+        member_list = "\n".join((str(client.tracked_members.index(tracked_member) + 1) + ": " + tracked_member.member.display_name + (" (DEAD)" if tracked_member.is_dead else "") for tracked_member in filter(lambda m: m.is_listed, client.tracked_members)))
+        if client.mimic:
+            mimic_text = f"Mimicking: {client.mimic.display_name}"
         else:
             mimic_text = "Not mimicking anyone! React with :copyright: to mimic you!"
-        await bot.control_panel.edit(content=f"**Muting:** {'Yes' if bot.is_muting else 'No'}\nMembers in Among Us:\n```{member_list}\n```{mimic_text}")
+        await client.control_panel.edit(content=f"**Muting:** {'Yes' if client.is_muting else 'No'}\nMembers in Among Us:\n```{member_list}\n```{mimic_text}")
 
 async def set_mute(mute_state):
-    bot.is_muting = mute_state
+    client.is_muting = mute_state
     tasks = []
-    for tracked_member in bot.tracked_members:
+    for tracked_member in client.tracked_members:
         if tracked_member.is_listed:
             if tracked_member.is_dead:
                 tasks.append(tracked_member.member.edit(mute=True, deafen=False))
-            elif tracked_member.member == bot.mimic:
+            elif tracked_member.member == client.mimic:
                 tasks.append(tracked_member.member.edit(mute=mute_state, deafen=False))
             else:
                 tasks.append(tracked_member.member.edit(mute=mute_state, deafen=mute_state))
@@ -91,24 +91,24 @@ async def set_mute(mute_state):
 
 async def set_mimic(member):
     if member:
-        if member.voice and member.voice.channel == bot.among_us_vc:
-            bot.mimic = member
-            await set_mute(bot.is_muting)
+        if member.voice and member.voice.channel == client.among_us_vc:
+            client.mimic = member
+            await set_mute(client.is_muting)
             await update_control_panel()
             return True
         else:
             return False
     else:
         # TODO: different behavior depending on if user left or just stopped mimicking.
-        bot.mimic = None
+        client.mimic = None
         await update_control_panel()
 
-@bot.event
+@client.event
 async def on_voice_state_update(member, before, after):
-    if bot.excluded_role in member.roles:
+    if client.excluded_role in member.roles:
         return
-    if member == bot.mimic:
-        if after.channel == bot.among_us_vc: # Status changed inside channel
+    if member == client.mimic:
+        if after.channel == client.among_us_vc: # Status changed inside channel
             if before.self_deaf != after.self_deaf:
                 await set_mute(after.self_deaf)
                 await update_control_panel()
@@ -116,40 +116,40 @@ async def on_voice_state_update(member, before, after):
             await set_mimic(None)
     # TODO: optimize this. it's called n times each time set_mute is done. n is the amount of members in vc
     if before.channel != after.channel:
-        if after.channel == bot.among_us_vc:
-            if not member in (tracked_member.member for tracked_member in bot.tracked_members):
-                bot.tracked_members.append(Tracked_member(member))
+        if after.channel == client.among_us_vc:
+            if not member in (tracked_member.member for tracked_member in client.tracked_members):
+                client.tracked_members.append(Tracked_member(member))
                 await update_control_panel()
             else:
-                for tracked_member in bot.tracked_members:
+                for tracked_member in client.tracked_members:
                     if member == tracked_member.member and not tracked_member.is_listed:
                         tracked_member.is_listed = True
                         await update_control_panel()
-        elif after.channel != bot.among_us_vc and member in (tracked_member.member for tracked_member in bot.tracked_members):
-            for tracked_member in bot.tracked_members:
+        elif after.channel != client.among_us_vc and member in (tracked_member.member for tracked_member in client.tracked_members):
+            for tracked_member in client.tracked_members:
                 if member == tracked_member.member and tracked_member.is_listed:
                     tracked_member.is_listed = False
                     await update_control_panel()
 
-@bot.event
+@client.event
 async def on_reaction_add(reaction, member):
-    if member == bot.user:
+    if member == client.user:
         return
-    if reaction.message.id == bot.control_panel.id:
+    if reaction.message.id == client.control_panel.id:
         if reaction.emoji == '🔈':
-            await set_mute(not bot.is_muting)
+            await set_mute(not client.is_muting)
             await update_control_panel()
         elif reaction.emoji == '©':
-            if bot.mimic is None:
+            if client.mimic is None:
                 await set_mimic(member)
-            elif member == bot.mimic:
+            elif member == client.mimic:
                 await set_mimic(None)
         elif reaction.emoji == '🔄':
-            for tracked_member in bot.tracked_members:
+            for tracked_member in client.tracked_members:
                 tracked_member.is_dead = False
             await set_mute(False)
             await update_control_panel()
     await reaction.remove(member)
 
-bot.run(TOKEN)
+client.run(TOKEN)
 
