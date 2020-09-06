@@ -27,7 +27,7 @@ client.is_muting = False
 client.tracked_members = []
 client.control_panel = None
 
-class Tracked_member():
+class TrackedMember():
     def __init__(self, member, is_listed=True, is_dead=False):
         self.member = member
         self.is_listed = is_listed
@@ -42,7 +42,7 @@ async def on_ready():
     client.excluded_role = discord.utils.get(client.managed_guild.roles, name=EXCLUDE_ROLE)
     client.tracked_members = client.among_us_vc.members
     client.tracked_members = list(filter(lambda m: not client.excluded_role in m.roles, client.tracked_members))
-    client.tracked_members = [Tracked_member(member) for member in client.tracked_members] # convert to dicts
+    client.tracked_members = [TrackedMember(member) for member in client.tracked_members] # convert to dicts
     await send_control_panel()
 
 @client.event
@@ -115,7 +115,7 @@ async def on_voice_state_update(member, before, after):
     if before.channel != after.channel:
         if after.channel == client.among_us_vc:
             if not member in (tracked_member.member for tracked_member in client.tracked_members):
-                client.tracked_members.append(Tracked_member(member))
+                client.tracked_members.append(TrackedMember(member))
                 await update_control_panel()
             else:
                 for tracked_member in client.tracked_members:
