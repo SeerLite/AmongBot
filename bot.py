@@ -46,7 +46,8 @@ class BotPresence():
         return self
 
     def track_current_voice(self):
-        # TODO: call self.forget_old_voice() here
+        await self.set_mute(False, only_listed=False)
+        self.tracked_members = []
         self.tracked_members = list(filter(lambda m: not any((role in m.roles for role in self.excluded_roles)), self.voice_channel.members))
         self.tracked_members = [TrackedMember(member) for member in self.tracked_members]
 
