@@ -122,11 +122,23 @@ async def on_voice_state_update(member, before, after):
                     if member == tracked_member.member and not tracked_member.is_listed:
                         tracked_member.is_listed = True
                         await update_control_panel()
-        elif after.channel != client.among_us_vc and member in (tracked_member.member for tracked_member in client.tracked_members):
-            for tracked_member in client.tracked_members:
-                if member == tracked_member.member and tracked_member.is_listed:
-                    tracked_member.is_listed = False
-                    await update_control_panel()
+        elif after.channel != client.among_us_vc:
+            if len(client.among_us_vc.members) == 0:                                             # clear all tracked_members
+                # TODO: make this all a new flag for set_mute (e.g only_managed=False) {
+                client.is_muting = False
+                tasks = []
+                for tracked_member in client.tracked_members:
+                    tasks.append(tracked_member.member.edit(mute=False))
+                await asyncio.gather(*tasks)
+                # }
+                client.tracked_members = []
+                await update_control_panel()
+            elif member in (tracked_member.member for tracked_member in client.tracked_members): # stop listing tracked_members who leave (but don't stop tracking them!)
+                # TODO: don't stop tracking muted members
+                for tracked_member in client.tracked_members:
+                    if member == tracked_member.member and tracked_member.is_listed:
+                        tracked_member.is_listed = False
+                        await update_control_panel()
 
 @client.event
 async def on_reaction_add(reaction, member):
