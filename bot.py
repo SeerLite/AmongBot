@@ -35,7 +35,7 @@ class BotPresence():
         self.excluded_roles = excluded_roles or []
         self.is_muting = is_muting
         self.mimic = mimic
-        self.tracked_members = tracked_members # TODO: maybe this shouldn't be passed, nor saved in database
+        self.tracked_members = tracked_members or [] # TODO: maybe this shouldn't be passed, nor saved in database
         self.control_panel = None
 
         if self.text_channel and self.voice_channel:
