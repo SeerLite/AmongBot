@@ -10,15 +10,12 @@ if not (TOKEN := os.getenv("DISCORD_TOKEN")):
         print("No .token file found! Please create it or pass it through DISCORD_TOKEN environment variable.")
         sys.exit(1)
 
-VOICE_CHANNEL = "Among Us"
-TEXT_CHANNEL = "amongbot"
 EXCLUDE_ROLE = "Music Botss"
 
 client = discord.Client()
 
 class TrackedMember():
-    # TODO: make these kw only args
-    def __init__(self, member, is_listed=True, is_dead=False, mute=False):
+    def __init__(self, member, *, is_listed=True, is_dead=False, mute=False):
         self.member = member
         self.is_listed = is_listed
         self.is_dead = is_dead
@@ -26,28 +23,27 @@ class TrackedMember():
 
 class BotPresence():
     @classmethod
-    async def create(cls, guild, *, text_channel=None, voice_channel=None, excluded_roles=None, is_muting=False, mimic=None, tracked_members=None):
+    async def create(cls, guild, *, text_channel=None, voice_channel=None, excluded_roles=[], is_muting=False, mimic=None):
         self = BotPresence()
 
         self.guild = guild
         self.text_channel = text_channel
         self.voice_channel = voice_channel
-        self.excluded_roles = excluded_roles or []
+        self.excluded_roles = excluded_roles
         self.is_muting = is_muting
         self.mimic = mimic
-        self.tracked_members = tracked_members or [] # TODO: maybe this shouldn't be passed, nor saved in database
         self.control_panel = None
+        self.tracked_members = []
 
         if self.text_channel and self.voice_channel:
-            if self.tracked_members is None: # TODO: related to TODO above
-                await self.track_current_voice()
+            await self.track_current_voice()
             await self.send_control_panel()
 
         return self
 
+    # TODO: we're creating tracked_members = [] above but below we discard it and just take voice_channel.members. do something about this
     async def track_current_voice(self):
         await self.set_mute(False, only_listed=False)
-        self.tracked_members = []
         self.tracked_members = list(filter(lambda m: not any((role in m.roles for role in self.excluded_roles)), self.voice_channel.members))
         self.tracked_members = [TrackedMember(member) for member in self.tracked_members]
 
