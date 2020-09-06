@@ -60,11 +60,11 @@ class BotPresence():
         if message.content == "among:text": #TODO: make this a method
             #TODO: check for permissions in channel here
             self.text_channel = message.channel
-            await self.text_channel.send(f"Current channel {self.text_channel.name} set as {client.user.name}'s channel!")
+            await self.text_channel.send(f"Current channel {self.text_channel.mention} set as {client.user.name}'s channel!")
             if self.voice_channel:
                 await self.send_control_panel()
             else:
-                await self.text_channel.send("Please define a voice channel by joining it and using among:vc")
+                await self.text_channel.send("Please set a voice channel by joining it and using among:vc")
         elif message.channel == self.text_channel:
             #TODO: check for permissions in vc here
             if message.content == "among:vc": #TODO: make  this method
@@ -74,11 +74,11 @@ class BotPresence():
                     await self.text_channel.send(f"{self.voice_channel.name} set as tracked voice channel!")
                     await self.send_control_panel()
                 elif self.control_panel:
-                    await self.text_channel.send(f"User {message.author} not in any voice channel on this server. Stopped tracking {self.voice_channel}.")
+                    await self.text_channel.send(f"User {message.author.mention} not in any voice channel on this server. Stopped tracking {self.voice_channel}.")
                     await self.control_panel.delete()
                     self.control_panel = None
                 else:
-                    await self.text_channel.send(f"Error! User {message.author} not in any voice channel on this server! Please join a voice channel first!")
+                    await self.text_channel.send(f"Error! User {message.author.mention} not in any voice channel on this server! Please join a voice channel first!")
             elif message.content.isdigit():
                 index = int(message.content) - 1
                 if index in range(len(self.tracked_members)):
@@ -101,7 +101,7 @@ class BotPresence():
             return
         member_list = "\n".join((str(self.tracked_members.index(tracked_member) + 1) + ": " + tracked_member.member.display_name + (" (DEAD)" if tracked_member.is_dead else "") for tracked_member in filter(lambda m: m.is_listed, self.tracked_members)))
         if self.mimic:
-            mimic_text = f"Mimicking: {self.mimic.display_name}"
+            mimic_text = f"Mimicking: {self.mimic.mention}"
         else:
             mimic_text = "Not mimicking anyone! React with :copyright: to mimic you!"
         await self.control_panel.edit(content=f"**Muting:** {'Yes' if self.is_muting else 'No'}\nMembers in {self.voice_channel.name}:\n```{member_list}\n```{mimic_text}")
