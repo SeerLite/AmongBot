@@ -1,4 +1,10 @@
+IMPORTANT: listen to remove_from_guild or whatever it's called so we don't end up with duplicate BotPresence entries when removing/readding
+
 TODOs in code
+
+untrack/unmute everyone everytime a new vc is set
+
+combine all messages that come into one, and delete it once required actions are completed
 
 mimic shouldn't call set_mute or set_mute shouldn't edit ALL members (only the necessary)
 
