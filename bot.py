@@ -17,10 +17,12 @@ EXCLUDE_ROLE = "Music Botss"
 client = discord.Client()
 
 class TrackedMember():
-    def __init__(self, member, is_listed=True, is_dead=False):
+    # TODO: make these kw only args
+    def __init__(self, member, is_listed=True, is_dead=False, mute=False):
         self.member = member
         self.is_listed = is_listed
         self.is_dead = is_dead
+        self.mute = mute
 
 class BotPresence():
     @classmethod
@@ -103,19 +105,18 @@ class BotPresence():
             mimic_text = "Not mimicking anyone! React with :copyright: to mimic you!"
         await self.control_panel.edit(content=f"**Muting:** {'Yes' if self.is_muting else 'No'}\nMembers in {self.voice_channel.name}:\n```{member_list}\n```{mimic_text}")
 
-    async def set_mute(self, mute_state):
+    async def set_mute(self, mute_state, *, only_listed=True):
         self.is_muting = mute_state
         tasks = []
         for tracked_member in self.tracked_members:
-            if tracked_member.is_listed:
+            if (tracked_member.is_listed or not only_listed) and tracked_member.member.voice and tracked_member.member.voice.channel == self.voice_channel:
                 if tracked_member.is_dead:
                     if not tracked_member.member.voice.mute:
                         tasks.append(tracked_member.member.edit(mute=True))
+                        tracked_member.mute = True
                 elif tracked_member.member.voice.mute != mute_state:
-                    if tracked_member.member == self.mimic:
-                        tasks.append(tracked_member.member.edit(mute=mute_state))
-                    else:
-                        tasks.append(tracked_member.member.edit(mute=mute_state))
+                    tasks.append(tracked_member.member.edit(mute=mute_state))
+                    tracked_member.mute = mute_state
         await asyncio.gather(*tasks)
 
     async def set_mimic(self, member):
@@ -131,6 +132,8 @@ class BotPresence():
 
     async def on_voice_state_update(self, member, before, after):
         if member.guild != self.guild:
+            return
+        if self.voice_channel is None:
             return
         if any((role in member.roles for role in self.excluded_roles)):
             return
@@ -152,24 +155,16 @@ class BotPresence():
                         if member == tracked_member.member and not tracked_member.is_listed:
                             tracked_member.is_listed = True
                             await self.update_control_panel()
-            elif self.voice_channel and after.channel != self.voice_channel:
-                if len(self.voice_channel.members) == 0:                                             # clear all tracked_members
-                    # TODO: make this all a new flag for set_mute (e.g only_visible=False) {
-                    self.is_muting = False
-                    tasks = []
+            elif after.channel != self.voice_channel:
+                if member in (tracked_member.member for tracked_member in self.tracked_members): # stop listing tracked_members who leave (but don't stop tracking them unless there's no more tracked members!)
                     for tracked_member in self.tracked_members:
-                        if tracked_member.member.voice:
-                            tasks.append(tracked_member.member.edit(mute=False))
-                    await asyncio.gather(*tasks)
-                    # }
-                    self.tracked_members = []
-                    await self.update_control_panel()
-                elif member in (tracked_member.member for tracked_member in self.tracked_members): # stop listing tracked_members who leave (but don't stop tracking them!)
-                    # TODO: don't stop tracking muted members
-                    for tracked_member in self.tracked_members:
-                        if member == tracked_member.member and tracked_member.is_listed:
+                        if member == tracked_member.member and tracked_member.is_listed and not tracked_member.mute:
                             tracked_member.is_listed = False
-                            await self.update_control_panel()
+
+                if not any((tracked_member.is_listed for tracked_member in self.tracked_members)): # reset indexes when managed members leave
+                    await self.set_mute(False, only_listed=False)
+                    self.tracked_members = []
+                await self.update_control_panel()
 
     async def on_reaction_add(self, reaction, member):
         if member.guild != self.guild:
