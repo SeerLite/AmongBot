@@ -8,8 +8,6 @@ untrack/unmute everyone everytime a new vc is set
 
 combine all messages that come into one, and delete it once required actions are completed
 
-mimic shouldn't call set_mute or set_mute shouldn't edit ALL members (only the necessary)
-
 support mutliple guilds:
     among:role - lists roles with index and sets which ones to exclude by index (similar to DEAD menu)
         maybe a new Menu functionality/class
@@ -30,10 +28,6 @@ reaction: request unmute
     requests unmute for user
     unmutes if in another voice channel
     works for everyone even if bot is in admin-only (as long as they're managed by bot)
-
-# still thinking about this
-rename set_mute() to toggle_mute()
-    create new update_mute() to replicate old set_mute(True)
 
 add agplv3 license
 

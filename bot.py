@@ -124,7 +124,7 @@ class BotPresence():
         if member:
             if member.voice and member.voice.channel == self.voice_channel:
                 self.mimic = member
-                await self.set_mute(self.is_muting)
+                await self.set_mute(self.is_muting) # TODO: maybe set_mute() with no args should default to current mute
                 return True
             else:
                 return False
