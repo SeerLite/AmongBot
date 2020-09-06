@@ -9,8 +9,8 @@ untrack/unmute everyone everytime a new vc is set
 combine all messages that come into one, and delete it once required actions are completed
 
 support mutliple guilds:
-    among:role - lists roles with index and sets which ones to exclude by index (similar to DEAD menu)
-        maybe a new Menu functionality/class
+    among:vc/chat/excluderole should accept optional parameter
+    among:unexcluderole to unexclude
 
 commands for all reactions (maybe not):
     among:mute/among:unmute and the like

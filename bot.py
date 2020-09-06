@@ -10,8 +10,6 @@ if not (TOKEN := os.getenv("DISCORD_TOKEN")):
         print("No .token file found! Please create it or pass it through DISCORD_TOKEN environment variable.")
         sys.exit(1)
 
-EXCLUDE_ROLE = "Music Botss"
-
 client = discord.Client()
 
 class TrackedMember():
@@ -62,9 +60,9 @@ class BotPresence():
             else:
                 await self.text_channel.send("Please set a voice channel by joining it and using among:vc")
         elif message.channel == self.text_channel:
-            #TODO: check for permissions in vc here
             if message.content == "among:vc": #TODO: make  this method
                 if message.author.voice:
+                    #TODO: check for permissions in vc here
                     self.voice_channel = message.author.voice.channel
                     await self.track_current_voice()
                     await self.text_channel.send(f"{self.voice_channel.name} set as tracked voice channel!")
@@ -75,6 +73,11 @@ class BotPresence():
                     self.control_panel = None
                 else:
                     await self.text_channel.send(f"Error! User {message.author.mention} not in any voice channel on this server! Please join a voice channel first!")
+            elif message.content.startswith("among:excluderole "):
+                # TODO check if any mentions were received at all and error out if not
+                # TODO remove newly excluded role from tracked_members
+                self.excluded_roles.extend(message.role_mentions)
+                await self.text_channel.send(f"Now excluding roles:\n{' '.join((role.mention for role in self.excluded_roles))}")
             elif message.content.isdigit():
                 index = int(message.content) - 1
                 if index in range(len(self.tracked_members)):
