@@ -1,4 +1,8 @@
+bug: didn't update when setting someone to dead
+
 TODOs in code
+
+mimic shouldn't call set_mute or set_mute shouldn't edit ALL members (only the necessary)
 
 support mutliple guilds:
     among:vc   - lists voice channels with index and listens for an index response. configures the vc for the guild
