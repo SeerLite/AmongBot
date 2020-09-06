@@ -2,6 +2,8 @@ TODOs in code
 
 once tracked, only mute inside of channel and unmute elsewhere
 
+use sets instead of lists where an improvement can be seen
+
 message user personally if can't send to channel
 
 untrack/unmute everyone everytime a new vc is set
@@ -9,7 +11,7 @@ untrack/unmute everyone everytime a new vc is set
 combine all messages that come into one, and delete it once required actions are completed
 
 support mutliple guilds:
-    among:vc/chat/excluderole should accept optional parameter
+    among:vc/chat/excluderole should accept optional parameter (actually, might not be possible with among:vc)
     among:unexcluderole to unexclude
 
 commands for all reactions (maybe not):
