@@ -215,6 +215,13 @@ async def on_guild_join(guild):
     ))
 
 @client.event
+async def on_guild_remove(guild):
+    for i, presence in enumerate(client.presences):
+        if guild == presence.guild:
+            del client.presences[i]
+            break
+
+@client.event
 async def on_message(message):
     if message.author == client.user:
         return
