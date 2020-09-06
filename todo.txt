@@ -6,6 +6,14 @@ reaction: join
     joins the voice channel
     when joined, plays sounds before muting and after unmuting everyone
 
+reaction: admin-only
+    only act when admin reacts
+
+reaction: request unmute
+    requests unmute for user
+    unmutes if in another voice channel
+    works for everyone even if bot is in admin-only (as long as they're managed by bot)
+
 when everyone leaves vc:
     unmute all managed members
     forget all tracked members
