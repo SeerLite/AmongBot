@@ -35,17 +35,17 @@ class BotPresence():
         self.excluded_roles = excluded_roles or []
         self.is_muting = is_muting
         self.mimic = mimic
-        self.tracked_members = tracked_members
+        self.tracked_members = tracked_members # TODO: maybe this shouldn't be passed, nor saved in database
         self.control_panel = None
 
         if self.text_channel and self.voice_channel:
-            if self.tracked_members is None:
-                self.track_current_voice()
+            if self.tracked_members is None: # TODO: related to TODO above
+                await self.track_current_voice()
             await self.send_control_panel()
 
         return self
 
-    def track_current_voice(self):
+    async def track_current_voice(self):
         await self.set_mute(False, only_listed=False)
         self.tracked_members = []
         self.tracked_members = list(filter(lambda m: not any((role in m.roles for role in self.excluded_roles)), self.voice_channel.members))
@@ -70,7 +70,7 @@ class BotPresence():
             if message.content == "among:vc": #TODO: make  this method
                 if message.author.voice:
                     self.voice_channel = message.author.voice.channel
-                    self.track_current_voice()
+                    await self.track_current_voice()
                     await self.text_channel.send(f"{self.voice_channel.name} set as tracked voice channel!")
                     await self.send_control_panel()
                 elif self.control_panel:
