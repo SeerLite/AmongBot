@@ -12,7 +12,7 @@ if not (TOKEN := os.getenv("DISCORD_TOKEN")):
 
 GUILD_ID = 691468513239367761
 VOICE_CHANNEL = "Among Us"
-TEXT_CHANNEL = "litebot"
+TEXT_CHANNEL = "amongbot"
 EXCLUDE_ROLE = "Music Botss"
 
 client = discord.Client()
