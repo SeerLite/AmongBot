@@ -20,7 +20,7 @@ client = discord.Client()
 client.managed_guild = None
 client.among_us_vc = None
 client.litebot_channel = None
-client.exclude_role = None
+client.excluded_role = None
 
 client.mimic = None
 client.is_muting = False
