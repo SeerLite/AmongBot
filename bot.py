@@ -1,6 +1,5 @@
 import os, sys, asyncio
 import discord
-#from discord.ext import commands
 import time
 
 if not (TOKEN := os.getenv("DISCORD_TOKEN")):
@@ -82,11 +81,11 @@ async def set_mute(mute_state):
     for tracked_member in client.tracked_members:
         if tracked_member.is_listed:
             if tracked_member.is_dead:
-                tasks.append(tracked_member.member.edit(mute=True, deafen=False))
+                tasks.append(tracked_member.member.edit(mute=True))
             elif tracked_member.member == client.mimic:
-                tasks.append(tracked_member.member.edit(mute=mute_state, deafen=False))
+                tasks.append(tracked_member.member.edit(mute=mute_state))
             else:
-                tasks.append(tracked_member.member.edit(mute=mute_state, deafen=mute_state))
+                tasks.append(tracked_member.member.edit(mute=mute_state))
     await asyncio.gather(*tasks)
 
 async def set_mimic(member):
@@ -99,7 +98,6 @@ async def set_mimic(member):
         else:
             return False
     else:
-        # TODO: different behavior depending on if user left or just stopped mimicking.
         client.mimic = None
         await update_control_panel()
 
@@ -114,7 +112,6 @@ async def on_voice_state_update(member, before, after):
                 await update_control_panel()
         else:                                # Whoops, not in channel anymore?
             await set_mimic(None)
-    # TODO: optimize this. it's called n times each time set_mute is done. n is the amount of members in vc
     if before.channel != after.channel:
         if after.channel == client.among_us_vc:
             if not member in (tracked_member.member for tracked_member in client.tracked_members):
