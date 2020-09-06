@@ -128,7 +128,8 @@ async def on_voice_state_update(member, before, after):
                 client.is_muting = False
                 tasks = []
                 for tracked_member in client.tracked_members:
-                    tasks.append(tracked_member.member.edit(mute=False))
+                    if tracked_member.member.voice:
+                        tasks.append(tracked_member.member.edit(mute=False))
                 await asyncio.gather(*tasks)
                 # }
                 client.tracked_members = []
