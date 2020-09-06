@@ -123,13 +123,11 @@ class BotPresence():
             if member.voice and member.voice.channel == self.voice_channel:
                 self.mimic = member
                 await self.set_mute(self.is_muting)
-                await self.update_control_panel() # TODO move this and
                 return True
             else:
                 return False
         else:
             self.mimic = None
-            await self.update_control_panel() # TODO this to after each call instead of inside set_mimic
 
     async def on_voice_state_update(self, member, before, after):
         if member.guild != self.guild:
@@ -143,6 +141,7 @@ class BotPresence():
                     await self.update_control_panel()
             else:                                # Whoops, not in channel anymore?
                 await self.set_mimic(None)
+                await self.update_control_panel()
         if before.channel != after.channel:
             if after.channel == self.voice_channel:
                 if not member in (tracked_member.member for tracked_member in self.tracked_members):
@@ -182,8 +181,10 @@ class BotPresence():
             elif reaction.emoji == '©':
                 if self.mimic is None:
                     await self.set_mimic(member)
+                    await self.update_control_panel()
                 elif member == self.mimic:
                     await self.set_mimic(None)
+                    await self.update_control_panel()
             elif reaction.emoji == '🔄':
                 for tracked_member in self.tracked_members:
                     tracked_member.is_dead = False
