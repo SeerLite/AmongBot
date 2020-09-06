@@ -1,17 +1,12 @@
-bug: didn't update when setting someone to dead
-
 TODOs in code
 
 mimic shouldn't call set_mute or set_mute shouldn't edit ALL members (only the necessary)
 
 support mutliple guilds:
-    among:vc   - lists voice channels with index and listens for an index response. configures the vc for the guild
-    among:chat - establishes the text channel the command was sent in as the bot channel
-    among:setup - alias for among:chat
     among:role - lists roles with index and sets which ones to exclude by index (similar to DEAD menu)
         maybe a new Menu functionality/class
 
-commands for all reactions:
+commands for all reactions (maybe not):
     among:mute/among:unmute and the like
     maybe a new Action class that sets up reaction listening, default reaction sending (the reaction sent by the bot to the control panel) and respective commands
 
@@ -21,21 +16,16 @@ reaction: join
 
 reaction: admin-only
     only act when admin reacts
+    needs a prepared admin role set up with among:admin_role
 
 reaction: request unmute
     requests unmute for user
     unmutes if in another voice channel
     works for everyone even if bot is in admin-only (as long as they're managed by bot)
 
-when everyone leaves vc:
-    unmute all managed members
-    forget all tracked members
-
 # still thinking about this
 rename set_mute() to toggle_mute()
     create new update_mute() to replicate old set_mute(True)
-
-take out update_control_panel() from set_mute(). manually call it after calling set_mute()
 
 add agplv3 license
 

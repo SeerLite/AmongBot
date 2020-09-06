@@ -24,7 +24,7 @@ class TrackedMember():
 
 class BotPresence():
     @classmethod
-    async def create(cls, guild, text_channel=None, voice_channel=None, excluded_roles=None, is_muting=False, mimic=None, tracked_members=None):
+    async def create(cls, guild, *, text_channel=None, voice_channel=None, excluded_roles=None, is_muting=False, mimic=None, tracked_members=None):
         self = BotPresence()
 
         self.guild = guild
@@ -36,23 +36,53 @@ class BotPresence():
         self.tracked_members = tracked_members
         self.control_panel = None
 
-        if self.tracked_members is None:
-            self.tracked_members = list(filter(lambda m: not any((role in m.roles for role in self.excluded_roles)), self.voice_channel.members))
-            self.tracked_members = [TrackedMember(member) for member in self.tracked_members]
-        await self.send_control_panel()
+        if self.text_channel and self.voice_channel:
+            if self.tracked_members is None:
+                self.track_current_voice()
+            await self.send_control_panel()
 
         return self
 
+    def track_current_voice(self):
+        # TODO: call self.forget_old_voice() here
+        self.tracked_members = list(filter(lambda m: not any((role in m.roles for role in self.excluded_roles)), self.voice_channel.members))
+        self.tracked_members = [TrackedMember(member) for member in self.tracked_members]
+
     async def on_message(self, message):
-        if message.channel != self.text_channel:
+        if message.guild != self.guild:
             return
-        if message.content.isdigit():
-            index = int(message.content) - 1
-            if index in range(len(self.tracked_members)):
-                await message.delete()
-                self.tracked_members[index].is_dead = not self.tracked_members[index].is_dead
-                await self.set_mute(self.is_muting)
-                await self.update_control_panel()
+        if message.content == "among:setup":
+            #TODO: this does set_text() and set_vc() in one command
+            pass
+        if message.content == "among:text": #TODO: make this a method
+            #TODO: check for permissions in channel here
+            self.text_channel = message.channel
+            await self.text_channel.send(f"Current channel {self.text_channel.name} set as {client.user.name}'s channel!")
+            if self.voice_channel:
+                await self.send_control_panel()
+            else:
+                await self.text_channel.send("Please define a voice channel by joining it and using among:vc")
+        elif message.channel == self.text_channel:
+            #TODO: check for permissions in vc here
+            if message.content == "among:vc": #TODO: make  this method
+                if message.author.voice:
+                    self.voice_channel = message.author.voice.channel
+                    self.track_current_voice()
+                    await self.text_channel.send(f"{self.voice_channel.name} set as tracked voice channel!")
+                    await self.send_control_panel()
+                elif self.control_panel:
+                    await self.text_channel.send(f"User {message.author} not in any voice channel on this server. Stopped tracking {self.voice_channel}.")
+                    await self.control_panel.delete()
+                    self.control_panel = None
+                else:
+                    await self.text_channel.send(f"Error! User {message.author} not in any voice channel on this server! Please join a voice channel first!")
+            elif message.content.isdigit():
+                index = int(message.content) - 1
+                if index in range(len(self.tracked_members)):
+                    await message.delete()
+                    self.tracked_members[index].is_dead = not self.tracked_members[index].is_dead
+                    await self.set_mute(self.is_muting)
+                    await self.update_control_panel()
 
     async def send_control_panel(self):
         if self.control_panel:
@@ -102,6 +132,8 @@ class BotPresence():
             await self.update_control_panel() # TODO this to after each call instead of inside set_mimic
 
     async def on_voice_state_update(self, member, before, after):
+        if member.guild != self.guild:
+            return
         if any((role in member.roles for role in self.excluded_roles)):
             return
         if member == self.mimic:
@@ -121,7 +153,7 @@ class BotPresence():
                         if member == tracked_member.member and not tracked_member.is_listed:
                             tracked_member.is_listed = True
                             await self.update_control_panel()
-            elif after.channel != self.voice_channel:
+            elif self.voice_channel and after.channel != self.voice_channel:
                 if len(self.voice_channel.members) == 0:                                             # clear all tracked_members
                     # TODO: make this all a new flag for set_mute (e.g only_visible=False) {
                     self.is_muting = False
@@ -141,7 +173,9 @@ class BotPresence():
                             await self.update_control_panel()
 
     async def on_reaction_add(self, reaction, member):
-        if reaction.message.id == self.control_panel.id:
+        if member.guild != self.guild:
+            return
+        if reaction.message.id == self.control_panel.id: # TODO: why doesn't this work here without .id?
             if reaction.emoji == '🔈':
                 await self.set_mute(not self.is_muting)
                 await self.update_control_panel()
@@ -155,7 +189,9 @@ class BotPresence():
                     tracked_member.is_dead = False
                 await self.set_mute(False)
                 await self.update_control_panel()
-        await reaction.remove(member)
+            else:
+                print("nope")
+            await reaction.remove(member)
 
 @client.event
 async def on_ready():
@@ -164,18 +200,18 @@ async def on_ready():
     for guild in client.guilds:
         client.presences.append(await BotPresence.create(
             guild,
-            discord.utils.get(guild.text_channels, name=TEXT_CHANNEL),
-            discord.utils.get(guild.voice_channels, name=VOICE_CHANNEL),
-            [discord.utils.get(guild.roles, name=EXCLUDE_ROLE)],
+            #text_channel=discord.utils.get(guild.text_channels, name=TEXT_CHANNEL),
+            #voice_channel=discord.utils.get(guild.voice_channels, name=VOICE_CHANNEL),
+            #excluded_roles=[discord.utils.get(guild.roles, name=EXCLUDE_ROLE)],
         ))
 
 @client.event
 async def on_guild_join(guild):
     client.presences.append(await BotPresence.create(
         guild,
-        discord.utils.get(guild.text_channels, name=TEXT_CHANNEL),
-        discord.utils.get(guild.voice_channels, name=VOICE_CHANNEL),
-        [discord.utils.get(guild.roles, name=EXCLUDE_ROLE)],
+        #text_channel=discord.utils.get(guild.text_channels, name=TEXT_CHANNEL),
+        #voice_channel=discord.utils.get(guild.voice_channels, name=VOICE_CHANNEL),
+        #excluded_roles=[discord.utils.get(guild.roles, name=EXCLUDE_ROLE)],
     ))
 
 @client.event
