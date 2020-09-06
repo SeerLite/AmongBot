@@ -1,6 +1,13 @@
 TODOs in code
 
-Tracked_member -> TrackedMember
+support mutliple guilds:
+    among:vc   - lists voice channels with index and listens for an index response. configures the vc for the guild
+    among:chat - establishes the text channel the command was sent in as the bot channel
+    among:setup - alias for among:chat
+
+commands for all reactions:
+    among:mute/among:unmute and the like
+    maybe a new Action class that sets up reaction listening, default reaction sending (the reaction sent by the bot to the control panel) and respective commands
 
 reaction: join
     joins the voice channel
