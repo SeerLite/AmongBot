@@ -196,19 +196,13 @@ async def on_ready():
     client.presences = []
     for guild in client.guilds:
         client.presences.append(await BotPresence.create(
-            guild,
-            #text_channel=discord.utils.get(guild.text_channels, name=TEXT_CHANNEL),
-            #voice_channel=discord.utils.get(guild.voice_channels, name=VOICE_CHANNEL),
-            #excluded_roles=[discord.utils.get(guild.roles, name=EXCLUDE_ROLE)],
+            guild
         ))
 
 @client.event
 async def on_guild_join(guild):
     client.presences.append(await BotPresence.create(
-        guild,
-        #text_channel=discord.utils.get(guild.text_channels, name=TEXT_CHANNEL),
-        #voice_channel=discord.utils.get(guild.voice_channels, name=VOICE_CHANNEL),
-        #excluded_roles=[discord.utils.get(guild.roles, name=EXCLUDE_ROLE)],
+        guild
     ))
 
 @client.event
