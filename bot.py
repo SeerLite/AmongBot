@@ -80,8 +80,9 @@ async def set_mute(mute_state):
     tasks = []
     for tracked_member in client.tracked_members:
         if tracked_member.is_listed:
-            if tracked_member.is_dead and not tracked_member.member.voice.mute:
-                tasks.append(tracked_member.member.edit(mute=True))
+            if tracked_member.is_dead:
+                if not tracked_member.member.voice.mute:
+                    tasks.append(tracked_member.member.edit(mute=True))
             elif tracked_member.member.voice.mute != mute_state:
                 if tracked_member.member == client.mimic:
                     tasks.append(tracked_member.member.edit(mute=mute_state))
