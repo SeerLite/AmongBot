@@ -33,9 +33,20 @@ class TrackedMember():
         self.is_listed = is_listed
         self.is_dead = is_dead
 
+class BotPresence():
+    def __init__(self, guild, voice_channel=None, text_channel=None, excluded_roles=None, mimic=None):
+        self.guild = guild
+        self.voice_channel = voice_channel
+        self.text_channel = text_channel
+        self.excluded_roles = excluded_roles or []
+        self.mimic = mimic
+
 @client.event
 async def on_ready():
     print("Bot is online.")
+    client.presences = []
+    for guild in client.guilds:
+        client.presences.append(BotPresence(guild))
     client.managed_guild = discord.utils.get(client.guilds, id=GUILD_ID)
     client.litebot_channel = discord.utils.get(client.managed_guild.text_channels, name=TEXT_CHANNEL)
     client.among_us_vc = discord.utils.get(client.managed_guild.voice_channels, name=VOICE_CHANNEL)
