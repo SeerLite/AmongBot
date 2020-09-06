@@ -170,6 +170,8 @@ class BotPresence():
     async def on_reaction_add(self, reaction, member):
         if member.guild != self.guild:
             return
+        if self.control_panel is None:
+            return
         if reaction.message.id == self.control_panel.id: # TODO: why doesn't this work here without .id?
             if reaction.emoji == '🔈':
                 await self.set_mute(not self.is_muting)
