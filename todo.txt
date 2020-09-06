@@ -1,6 +1,8 @@
-IMPORTANT: listen to remove_from_guild or whatever it's called so we don't end up with duplicate BotPresence entries when removing/readding
-
 TODOs in code
+
+once tracked, only mute inside of channel and unmute elsewhere
+
+message user personally if can't send to channel
 
 untrack/unmute everyone everytime a new vc is set
 
