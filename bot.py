@@ -209,7 +209,7 @@ class BotPresence():
         if before.channel != after.channel:
             if after.channel == self.voice_channel:
                 if not member in (tracked_member.member for tracked_member in self.tracked_members):
-                    self.tracked_members.append(TrackedMember(member))
+                    self.tracked_members.append(TrackedMember(member, ignore=True if member.voice.mute != self.muting else False)) # ignore new members that don't match current mute state
                     await self.update_control_panel()
                 else:
                     for tracked_member in self.tracked_members:
