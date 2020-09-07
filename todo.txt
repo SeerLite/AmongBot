@@ -1,5 +1,7 @@
 TODOs in code
 
+move send_control_panel() outside of set_voice/text
+
 last filter() -> list comprehension
 
 in usage instructions:
