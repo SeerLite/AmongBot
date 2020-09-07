@@ -2,6 +2,11 @@ TODOs in code
 
 last filter() -> list comprehension
 
+in usage instructions:
+1. create channel for bot
+2. invite bot
+this to avoid people setting the bot in a general chat channel
+
 once tracked, only mute inside of channel and unmute elsewhere
 
 use sets instead of lists where an improvement can be seen
