@@ -42,9 +42,9 @@ class BotPresence():
     # TODO: we're creating tracked_members = [] above but below we discard it and just take voice_channel.members. do something about this
     async def track_current_voice(self):
         await self.set_mute(False, only_listed=False)
-        self.tracked_members = list(filter(lambda m: not any((role in m.roles for role in self.excluded_roles)), self.voice_channel.members))
-        self.tracked_members = [TrackedMember(member) for member in self.tracked_members]
+        self.tracked_members = [TrackedMember(member) for member in self.voice_channel.members if not any((role in member.roles for role in self.excluded_roles))]
 
+    # TODO: maybe it's a good idea to use ext.commands instead of manually doing the stuff
     async def on_message(self, message):
         if message.guild != self.guild:
             return
@@ -73,11 +73,15 @@ class BotPresence():
                     self.control_panel = None
                 else:
                     await self.text_channel.send(f"Error! User {message.author.mention} not in any voice channel on this server! Please join a voice channel first!")
-            elif message.content.startswith("among:excluderole "):
-                # TODO check if any mentions were received at all and error out if not
-                # TODO remove newly excluded role from tracked_members
-                self.excluded_roles.extend(message.role_mentions)
-                await self.text_channel.send(f"Now excluding roles:\n{' '.join((role.mention for role in self.excluded_roles))}")
+            elif message.content.startswith("among:excluderole"):
+                if message.role_mentions:
+                    # TODO unmute newly untracked members
+                    self.excluded_roles.extend(message.role_mentions)
+                    self.tracked_members = [tracked_member for tracked_member in self.tracked_members if not any((role in tracked_member.member.roles for role in self.excluded_roles))]
+                    await self.text_channel.send(f"Now excluding roles:\n{' '.join((role.mention for role in self.excluded_roles))}")
+                    await self.update_control_panel()
+                else:
+                    await self.text_channel.send("Error! No role mentions detected!\nUsage: `among:excluderole <role mention>...`")
             elif message.content.isdigit():
                 index = int(message.content) - 1
                 if index in range(len(self.tracked_members)):
