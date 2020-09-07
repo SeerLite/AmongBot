@@ -104,12 +104,12 @@ class BotPresence():
             return
         control_panel_text = (
             f"**Muting:** {'Yes' if self.is_muting else 'No'}\n"
-            f"**Members in {self.voice_channel.name}:**\n"
+            f"**Tracked users:**\n"
             "```\n"
         )
         for tracked_member in (tracked_member for tracked_member in self.tracked_members if tracked_member.is_listed):
             control_panel_text += f"{self.tracked_members.index(tracked_member) + 1}. {'(DEAD) ' if tracked_member.is_dead else '(MUTED)' if tracked_member.mute else '(ALIVE)'} {tracked_member.member.display_name.ljust(max((len(tracked_member.member.display_name) for tracked_member in self.tracked_members)))} | {tracked_member.member.name}#{tracked_member.member.discriminator}\n"
-        control_panel_text += "\n```"
+        control_panel_text += "```"
         if self.mimic:
             control_panel_text += f"**Mimicking:** {self.mimic.mention}"
         else:
