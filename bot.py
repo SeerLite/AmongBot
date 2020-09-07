@@ -243,5 +243,6 @@ async def on_reaction_add(reaction, member):
     for presence in client.presences:
         await presence.on_reaction_add(reaction, member) # NOTE: will receive reactions from all guilds
 
-client.run(TOKEN)
+if __name__ == '__main__':
+    client.run(TOKEN)
 
