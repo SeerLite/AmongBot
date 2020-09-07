@@ -80,11 +80,20 @@ class BotPresence():
         if message.guild != self.guild:
             return
         if message.content == "among:setup":
-            if message.channel != self.text_channel or (message.author.voice and message.author.voice.channel != self.voice_channel):
+            try:
                 await self.set_text_channel(message.channel)
+            except AlreadyDefinedError:
+                pass
+
+            try:
                 await self.set_voice_channel(message.author)
-            else:
-                await self.text_channel.send(f"Already set up! This is {client.user.display_name}'s channel and currently tracking {self.voice_channel.name}.")
+                await self.text_channel.send(f"All good! Listening for commands only on {self.text_channel.mention} and tracking {self.voice_channel.name}.")
+            except AlreadyDefinedError:
+                if self.voice_channel:
+                    await self.text_channel.send(f"Already set up! This is {client.user.display_name}'s channel and currently tracking {self.voice_channel.name}.")
+                else:
+                    await self.text_channel.send(f"Error! User {message.author.mention} not in any voice channel on this server! Please join a voice channel first!")
+                    self.text_channel = None # TODO: maybe call set_channel(None) instead?
         if message.content == "among:text":
             try:
                 await self.set_text_channel(message.channel)
