@@ -76,8 +76,11 @@ class BotPresence():
         if message.guild != self.guild:
             return
         if message.content == "among:setup":
-            await self.set_text_channel(message.channel)
-            await self.set_voice_channel(message.author)
+            if message.channel != self.text_channel or (message.author.voice and message.author.voice.channel != self.voice_channel):
+                await self.set_text_channel(message.channel)
+                await self.set_voice_channel(message.author)
+            else:
+                await self.text_channel.send(f"Already set up! This is {client.user.display_name}'s channel and currently tracking {self.voice_channel.name}.")
         if message.content == "among:text":
             await self.set_text_channel(message.channel)
         elif message.channel == self.text_channel:
