@@ -102,12 +102,19 @@ class BotPresence():
     async def update_control_panel(self):
         if self.control_panel is None:
             return
-        member_list = "\n".join((str(self.tracked_members.index(tracked_member) + 1) + ": " + tracked_member.member.display_name + (" (DEAD)" if tracked_member.is_dead else "") for tracked_member in filter(lambda m: m.is_listed, self.tracked_members)))
+        control_panel_text = (
+            f"**Muting:** {'Yes' if self.is_muting else 'No'}\n"
+            f"**Members in {self.voice_channel.name}:**\n"
+            "```\n"
+        )
+        for tracked_member in (tracked_member for tracked_member in self.tracked_members if tracked_member.is_listed):
+            control_panel_text += f"{self.tracked_members.index(tracked_member) + 1}. {'(DEAD) ' if tracked_member.is_dead else '(MUTED)' if tracked_member.mute else '(ALIVE)'} {tracked_member.member.display_name.ljust(max((len(tracked_member.member.display_name) for tracked_member in self.tracked_members)))} ({tracked_member.member.name}#{tracked_member.member.discriminator})\n"
+        control_panel_text += "\n```"
         if self.mimic:
-            mimic_text = f"Mimicking: {self.mimic.mention}"
+            control_panel_text += f"**Mimicking:** {self.mimic.mention}"
         else:
-            mimic_text = "Not mimicking anyone! React with :copyright: to mimic you!"
-        await self.control_panel.edit(content=f"**Muting:** {'Yes' if self.is_muting else 'No'}\nMembers in {self.voice_channel.name}:\n```{member_list}\n```{mimic_text}")
+            control_panel_text += "Not mimicking! React with :copyright: to mimic you!"
+        await self.control_panel.edit(content=control_panel_text)
 
     async def set_mute(self, mute_state, *, only_listed=True):
         self.is_muting = mute_state
@@ -191,8 +198,6 @@ class BotPresence():
                     tracked_member.is_dead = False
                 await self.set_mute(False)
                 await self.update_control_panel()
-            else:
-                print("nope")
             await reaction.remove(member)
 
 @client.event
