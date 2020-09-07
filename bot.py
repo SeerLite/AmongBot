@@ -31,14 +31,14 @@ class TrackedMember():
 
 class BotPresence():
     @classmethod
-    async def create(cls, guild, *, text_channel=None, voice_channel=None, excluded_roles=[], is_muting=False, mimic=None, control_panel=None):
+    async def create(cls, guild, *, text_channel=None, voice_channel=None, excluded_roles=[], muting=False, mimic=None, control_panel=None):
         self = BotPresence()
 
         self.guild = guild
         self.text_channel = text_channel
         self.voice_channel = voice_channel
         self.excluded_roles = excluded_roles
-        self.is_muting = is_muting
+        self.muting = muting
         self.mimic = mimic
         self.control_panel = control_panel
         self.tracked_members = []
@@ -87,6 +87,7 @@ class BotPresence():
             try:
                 await self.set_voice_channel(message.author)
                 await self.text_channel.send(f"All good! Listening for commands only on {self.text_channel.mention} and tracking {self.voice_channel.name}.")
+                await self.send_control_panel()
             except AlreadyDefinedError:
                 if self.voice_channel:
                     await self.text_channel.send(f"Already set up! This is {client.user.display_name}'s channel and currently tracking {self.voice_channel.name}.")
@@ -131,7 +132,7 @@ class BotPresence():
                 if index in range(len(self.tracked_members)):
                     await message.delete()
                     self.tracked_members[index].dead = not self.tracked_members[index].dead
-                    await self.set_mute(self.is_muting)
+                    await self.set_mute(self.muting)
                     await self.update_control_panel()
 
     async def send_control_panel(self):
@@ -147,7 +148,7 @@ class BotPresence():
         if self.control_panel is None:
             return
         control_panel_text = (
-            f"**Muting:** {'Yes' if self.is_muting else 'No'}\n"
+            f"**Muting:** {'Yes' if self.muting else 'No'}\n"
             f"**Tracked users:**\n"
             "```\n"
         )
@@ -161,7 +162,7 @@ class BotPresence():
         await self.control_panel.edit(content=control_panel_text)
 
     async def set_mute(self, mute_state, *, only_listed=True):
-        self.is_muting = mute_state
+        self.muting = mute_state
         tasks = []
         for tracked_member in self.tracked_members:
             if (tracked_member.list or not only_listed) and tracked_member.member.voice and tracked_member.member.voice.channel == self.voice_channel:
@@ -178,7 +179,7 @@ class BotPresence():
         if member:
             if member.voice and member.voice.channel == self.voice_channel:
                 self.mimic = member
-                await self.set_mute(self.is_muting) # TODO: maybe set_mute() with no args should default to current mute
+                await self.set_mute(self.muting) # TODO: maybe set_mute() with no args should default to current mute
                 return True
             else:
                 return False
@@ -228,7 +229,7 @@ class BotPresence():
             return
         if reaction.message.id == self.control_panel.id: # TODO: why doesn't this work here without .id?
             if reaction.emoji == '🔈':
-                await self.set_mute(not self.is_muting)
+                await self.set_mute(not self.muting)
                 await self.update_control_panel()
             elif reaction.emoji == '©':
                 if self.mimic is None:
