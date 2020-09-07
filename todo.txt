@@ -2,8 +2,6 @@ TODOs in code
 
 move send_control_panel() outside of set_voice/text
 
-last filter() -> list comprehension
-
 in usage instructions:
 1. create channel for bot
 2. invite bot
@@ -11,20 +9,20 @@ this to avoid people setting the bot in a general chat channel
 
 once tracked, only mute inside of channel and unmute elsewhere
 
-use sets instead of lists where an improvement can be seen
-
 document all documentable things with docstrings or whatever they're called
 
 message user personally if can't send to channel
 
-untrack/unmute everyone everytime a new vc is set
+untrack/unmute tracked people everytime a new vc is set
+    new method reset()?
 
 combine all messages that come into one, and delete it once required actions are completed
-    append command output/responses to the top of control_panel (chronological still lol) instead of responding. also, delete command messages
+    (?)append command output/responses to the top of control_panel (chronological still lol) instead of responding. also, delete command messages
 
 support mutliple guilds:
     among:vc/chat/excluderole should accept optional parameter (actually, might not be possible with among:vc)
     among:unexcluderole to unexclude
+    among:help
 
 commands for all reactions (maybe not):
     among:mute/among:unmute and the like
@@ -37,11 +35,7 @@ reaction: join
 reaction: admin-only
     only act when admin reacts
     needs a prepared admin role set up with among:admin_role
-
-reaction: request unmute
-    requests unmute for user
-    unmutes if in another voice channel
-    works for everyone even if bot is in admin-only (as long as they're managed by bot)
+    maybe can be easier set up if channel is only visible to admin (+bot ofc)
 
 add agplv3 license
 
