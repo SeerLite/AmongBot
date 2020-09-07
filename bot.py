@@ -12,6 +12,17 @@ if not (TOKEN := os.getenv("DISCORD_TOKEN")):
 
 client = discord.Client()
 
+class Error(Exception):
+    """Base class for exceptions in amongbot"""
+    pass
+
+class AlreadyDefinedError(Error):
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
+
 class TrackedMember():
     def __init__(self, member, *, is_listed=True, is_dead=False, mute=False):
         self.member = member
@@ -42,30 +53,23 @@ class BotPresence():
     async def set_text_channel(self, channel):
         #TODO: check for permissions in channel here
         if channel == self.text_channel:
-            await self.text_channel.send(f"This channel is already {client.user.name}'s channel.")
-            return
-
+            raise AlreadyDefinedError("Already listening to channel for commands")
         self.text_channel = channel
-        await self.text_channel.send(f"Current channel {self.text_channel.mention} set as {client.user.name}'s channel!\n"
-                                     f"Now accepting commands here.")
-        if self.voice_channel:
-            await self.send_control_panel()
+        return self.text_channel
+
     async def set_voice_channel(self, member):
         if member.voice:
             if member.voice.channel == self.voice_channel:
-                await self.text_channel.send(f"{self.voice_channel.name} is already tracked. To untrack, run `among:vc` while not connected to any channel.")
+                raise AlreadyDefinedError("Already tracking voice channel")
                 return
             #TODO: check for permissions in vc here
             self.voice_channel = member.voice.channel
             await self.track_current_voice()
-            await self.text_channel.send(f"{self.voice_channel.name} set as tracked voice channel!")
-            await self.send_control_panel()
-        elif self.control_panel:
-            await self.text_channel.send(f"User {member.mention} not in any voice channel on this server. Stopped tracking {self.voice_channel}.")
-            await self.control_panel.delete()
-            self.control_panel = None
+            return self.voice_channel
         else:
-            await self.text_channel.send(f"User {member.mention} not in any voice channel on this server! Please join a voice channel first!")
+            if self.voice_channel is None:
+                raise AlreadyDefinedError("Not tracking any voice channel")
+            self.voice_channel = None
     # TODO: we're creating tracked_members = [] above but below we discard it and just take voice_channel.members. do something about this
     async def track_current_voice(self):
         await self.set_mute(False, only_listed=False)
@@ -82,10 +86,29 @@ class BotPresence():
             else:
                 await self.text_channel.send(f"Already set up! This is {client.user.display_name}'s channel and currently tracking {self.voice_channel.name}.")
         if message.content == "among:text":
-            await self.set_text_channel(message.channel)
+            try:
+                await self.set_text_channel(message.channel)
+                await self.text_channel.send(f"Current channel {self.text_channel.mention} set as {client.user.name}'s channel!\n"
+                                             f"Now accepting commands here.")
+                if self.voice_channel:
+                    await self.send_control_panel()
+            except AlreadyDefinedError:
+                await self.text_channel.send(f"Error! This channel is already {client.user.name}'s channel.")
         elif message.channel == self.text_channel:
             if message.content == "among:vc":
-                await self.set_voice_channel(message.author)
+                try:
+                    if await self.set_voice_channel(message.author):
+                        await self.text_channel.send(f"{self.voice_channel.name} set as tracked voice channel!")
+                        await self.send_control_panel()
+                    elif self.control_panel:
+                        await self.control_panel.delete()
+                        self.control_panel = None
+                        await self.text_channel.send(f"User {message.author.mention} not in any voice channel on this server. Stopped tracking voice channel.")
+                except AlreadyDefinedError:
+                    if self.voice_channel:
+                        await self.text_channel.send(f"Error! {self.voice_channel.name} is already tracked. To untrack, run `among:vc` while not connected to any channel.")
+                    else:
+                        await self.text_channel.send(f"Error! User {message.author.mention} not in any voice channel on this server! Please join a voice channel first!")
             elif message.content.startswith("among:excluderole"):
                 if message.role_mentions:
                     # TODO unmute newly untracked members
