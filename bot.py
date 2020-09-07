@@ -21,7 +21,7 @@ class TrackedMember():
 
 class BotPresence():
     @classmethod
-    async def create(cls, guild, *, text_channel=None, voice_channel=None, excluded_roles=[], is_muting=False, mimic=None):
+    async def create(cls, guild, *, text_channel=None, voice_channel=None, excluded_roles=[], is_muting=False, mimic=None, control_panel=None):
         self = BotPresence()
 
         self.guild = guild
@@ -30,12 +30,12 @@ class BotPresence():
         self.excluded_roles = excluded_roles
         self.is_muting = is_muting
         self.mimic = mimic
-        self.control_panel = None
+        self.control_panel = control_panel
         self.tracked_members = []
 
         if self.text_channel and self.voice_channel:
             await self.track_current_voice()
-            await self.send_control_panel()
+            #await self.send_control_panel() # or just get the old control_panel back?
 
         return self
 
