@@ -1,6 +1,5 @@
 import os, sys, asyncio
 import discord
-import time
 
 if not (TOKEN := os.getenv("DISCORD_TOKEN")):
     try:
