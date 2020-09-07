@@ -23,10 +23,10 @@ class AlreadyDefinedError(Error):
         return self.msg
 
 class TrackedMember():
-    def __init__(self, member, *, is_listed=True, is_dead=False, mute=False):
+    def __init__(self, member, *, list=True, dead=False, mute=False):
         self.member = member
-        self.is_listed = is_listed
-        self.is_dead = is_dead
+        self.list = list
+        self.dead = dead
         self.mute = mute
 
 class BotPresence():
@@ -130,7 +130,7 @@ class BotPresence():
                 index = int(message.content) - 1
                 if index in range(len(self.tracked_members)):
                     await message.delete()
-                    self.tracked_members[index].is_dead = not self.tracked_members[index].is_dead
+                    self.tracked_members[index].dead = not self.tracked_members[index].dead
                     await self.set_mute(self.is_muting)
                     await self.update_control_panel()
 
@@ -151,8 +151,8 @@ class BotPresence():
             f"**Tracked users:**\n"
             "```\n"
         )
-        for tracked_member in (tracked_member for tracked_member in self.tracked_members if tracked_member.is_listed):
-            control_panel_text += f"{self.tracked_members.index(tracked_member) + 1}. {'(DEAD) ' if tracked_member.is_dead else '(MUTED)' if tracked_member.mute else '(ALIVE)'} {tracked_member.member.display_name.ljust(max((len(tracked_member.member.display_name) for tracked_member in self.tracked_members)))} | {tracked_member.member.name}#{tracked_member.member.discriminator}\n"
+        for tracked_member in (tracked_member for tracked_member in self.tracked_members if tracked_member.list):
+            control_panel_text += f"{self.tracked_members.index(tracked_member) + 1}. {'(DEAD) ' if tracked_member.dead else '(MUTED)' if tracked_member.mute else '(ALIVE)'} {tracked_member.member.display_name.ljust(max((len(tracked_member.member.display_name) for tracked_member in self.tracked_members)))} | {tracked_member.member.name}#{tracked_member.member.discriminator}\n"
         control_panel_text += "```"
         if self.mimic:
             control_panel_text += f"**Mimicking:** {self.mimic.mention}"
@@ -164,8 +164,8 @@ class BotPresence():
         self.is_muting = mute_state
         tasks = []
         for tracked_member in self.tracked_members:
-            if (tracked_member.is_listed or not only_listed) and tracked_member.member.voice and tracked_member.member.voice.channel == self.voice_channel:
-                if tracked_member.is_dead:
+            if (tracked_member.list or not only_listed) and tracked_member.member.voice and tracked_member.member.voice.channel == self.voice_channel:
+                if tracked_member.dead:
                     if not tracked_member.member.voice.mute:
                         tasks.append(tracked_member.member.edit(mute=True))
                         tracked_member.mute = True
@@ -207,16 +207,16 @@ class BotPresence():
                     await self.update_control_panel()
                 else:
                     for tracked_member in self.tracked_members:
-                        if member == tracked_member.member and not tracked_member.is_listed:
-                            tracked_member.is_listed = True
+                        if member == tracked_member.member and not tracked_member.list:
+                            tracked_member.list = True
                             await self.update_control_panel()
             elif after.channel != self.voice_channel:
                 if member in (tracked_member.member for tracked_member in self.tracked_members): # stop listing tracked_members who leave (but don't stop tracking them unless there's no more tracked members!)
                     for tracked_member in self.tracked_members:
-                        if member == tracked_member.member and tracked_member.is_listed and not tracked_member.mute:
-                            tracked_member.is_listed = False
+                        if member == tracked_member.member and tracked_member.list and not tracked_member.mute:
+                            tracked_member.list = False
 
-                if not any((tracked_member.is_listed for tracked_member in self.tracked_members)): # reset indexes when managed members leave
+                if not any((tracked_member.list for tracked_member in self.tracked_members)): # reset indexes when managed members leave
                     await self.set_mute(False, only_listed=False)
                     self.tracked_members = []
                 await self.update_control_panel()
@@ -239,7 +239,7 @@ class BotPresence():
                     await self.update_control_panel()
             elif reaction.emoji == '🔄':
                 for tracked_member in self.tracked_members:
-                    tracked_member.is_dead = False
+                    tracked_member.dead = False
                 await self.set_mute(False)
                 await self.update_control_panel()
             await reaction.remove(member)
