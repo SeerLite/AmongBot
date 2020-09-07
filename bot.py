@@ -121,8 +121,13 @@ class BotPresence():
                         await self.text_channel.send(f"Error! User {message.author.mention} not in any voice channel on this server! Please join a voice channel first!")
             elif message.content.startswith("among:excluderole"):
                 if message.role_mentions:
-                    # TODO unmute newly untracked members
                     self.excluded_roles.extend(message.role_mentions)
+                    # unmute all members from newly excluded role:
+                    tasks = []
+                    for member in (tracked_member.member for tracked_member in self.tracked_members if any((role in tracked_member.member.roles for role in self.excluded_roles))):
+                        tasks.append(member.edit(mute=False))
+                    asyncio.gather(*tasks)
+
                     self.tracked_members = [tracked_member for tracked_member in self.tracked_members if not any((role in tracked_member.member.roles for role in self.excluded_roles))]
                     await self.text_channel.send(f"Now excluding roles:\n{' '.join((role.mention for role in self.excluded_roles))}")
                     await self.update_control_panel()
