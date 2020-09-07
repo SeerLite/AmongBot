@@ -11,6 +11,8 @@ once tracked, only mute inside of channel and unmute elsewhere
 
 document all documentable things with docstrings or whatever they're called
 
+fuzzy username killing
+
 message user personally if can't send to channel
 
 untrack/unmute tracked people everytime a new vc is set
