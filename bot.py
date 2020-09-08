@@ -17,13 +17,13 @@ class Error(Exception):
     pass
 
 class AlreadyDefinedError(Error):
-    def __init__(self, msg):
+    def __init__(self, msg=None):
         self.msg = msg
 
     def __str__(self):
         return self.msg
 
-class TrackedMember():
+class TrackedMember:
     def __init__(self, member, *, list=True, dead=False, mute=False, ignore=False):
         self.member = member
         self.list = list
@@ -31,7 +31,7 @@ class TrackedMember():
         self.mute = mute
         self.ignore = ignore
 
-class BotPresence():
+class BotPresence:
     @classmethod
     async def create(cls, guild, *, text_channel_id=None, voice_channel_id=None, control_panel_id=None, excluded_roles_ids=[]):
         self = BotPresence()
@@ -39,17 +39,17 @@ class BotPresence():
         self.guild = guild
 
         if text_channel_id:
-            self.text_channel = self.guild.get_channel(int(text_channel_id))
+            self._text_channel = self.guild.get_channel(int(text_channel_id))
         else:
-            self.text_channel = None
+            self._text_channel = None
 
         if voice_channel_id:
-            self.voice_channel = self.guild.get_channel(int(voice_channel_id))
+            self._voice_channel = self.guild.get_channel(int(voice_channel_id))
         else:
-            self.voice_channel = None
+            self._voice_channel = None
 
         if control_panel_id:
-            # fetch_message() can raise exceptions, handle them
+            # TODO: fetch_message() can raise exceptions, handle them
             self.control_panel = await self.text_channel.fetch_message(int(control_panel_id))
         else:
             self.control_panel = None
@@ -67,6 +67,30 @@ class BotPresence():
 
         self.save()
         return self
+
+    @property
+    def text_channel(self):
+        return self._text_channel
+
+    @text_channel.setter
+    def text_channel(self, channel):
+        #TODO: check for permissions in channel here. message user personally if can't send to channel
+        if self._text_channel == channel:
+            raise AlreadyDefinedError
+        self._text_channel = channel
+        self.save()
+
+    @property
+    def voice_channel(self):
+        return self._voice_channel
+
+    @voice_channel.setter
+    def voice_channel(self, channel):
+        if self._voice_channel == channel:
+            raise AlreadyDefinedError
+        #TODO: check for permissions in vc here
+        self._voice_channel = channel
+        self.save()
 
     def save(self):
         if not str(self.guild.id) in save_data:
@@ -86,30 +110,6 @@ class BotPresence():
             with open("data.json", "x") as save_file:
                 json.dump(save_data, save_file)
 
-    async def set_text_channel(self, channel):
-        #TODO: check for permissions in channel here. message user personally if can't send to channel
-        if channel == self.text_channel:
-            raise AlreadyDefinedError("Already listening to channel for commands")
-        self.text_channel = channel
-        self.save()
-        return self.text_channel
-
-    async def set_voice_channel(self, member):
-        if member.voice:
-            if member.voice.channel == self.voice_channel:
-                raise AlreadyDefinedError("Already tracking voice channel")
-                return
-            #TODO: check for permissions in vc here
-            self.voice_channel = member.voice.channel
-            self.save()
-            await self.track_current_voice()
-            return self.voice_channel
-        else:
-            if self.voice_channel is None:
-                raise AlreadyDefinedError("Not tracking any voice channel")
-            self.voice_channel = None
-            self.save()
-
     async def track_current_voice(self):
         await self.set_mute(False, only_listed=False)
         self.tracked_members = [TrackedMember(member) for member in self.voice_channel.members if not any((role in member.roles for role in self.excluded_roles))]
@@ -120,12 +120,16 @@ class BotPresence():
             return
         if message.content == "among:setup":
             try:
-                await self.set_text_channel(message.channel)
+                self.text_channel = message.channel
             except AlreadyDefinedError:
                 pass
 
             try:
-                await self.set_voice_channel(message.author)
+                if message.author.voice:
+                    self.voice_channel = message.author.voice.channel
+                    await self.track_current_voice()
+                else:
+                    self.voice_channel = None
                 await self.text_channel.send(f"All good! Listening for commands only on {self.text_channel.mention} and tracking {self.voice_channel.name}.")
                 await self.send_control_panel()
             except AlreadyDefinedError:
@@ -133,11 +137,10 @@ class BotPresence():
                     await self.text_channel.send(f"Already set up! This is {client.user.display_name}'s channel and currently tracking {self.voice_channel.name}.")
                 else:
                     await self.text_channel.send(f"Error! User {message.author.mention} not in any voice channel on this server! Please join a voice channel first!")
-                    self.text_channel = None # TODO: maybe call set_channel(None) instead?
-                    self.save()
+                    self.text_channel = None
         if message.content == "among:text":
             try:
-                await self.set_text_channel(message.channel)
+                self.text_channel = message.channel
                 await self.text_channel.send(f"Current channel {self.text_channel.mention} set as {client.user.name}'s channel!\n"
                                              f"Now accepting commands here.")
                 if self.voice_channel:
@@ -147,13 +150,17 @@ class BotPresence():
         elif message.channel == self.text_channel:
             if message.content == "among:vc":
                 try:
-                    if await self.set_voice_channel(message.author):
+                    if message.author.voice:
+                        self.voice_channel = message.author.voice.channel
+                        await self.track_current_voice()
                         await self.text_channel.send(f"{self.voice_channel.name} set as tracked voice channel!")
                         await self.send_control_panel()
-                    elif self.control_panel:
-                        await self.control_panel.delete()
-                        self.control_panel = None
-                        self.save()
+                    else:
+                        self.voice_channel = None
+                        if self.control_panel:
+                            await self.control_panel.delete()
+                            self.control_panel = None
+                            self.save()
                         await self.text_channel.send(f"User {message.author.mention} not in any voice channel on this server. Stopped tracking voice channel.")
                 except AlreadyDefinedError:
                     if self.voice_channel:
