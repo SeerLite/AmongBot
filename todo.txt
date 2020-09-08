@@ -18,10 +18,10 @@ combine all messages that come into one, and delete it once required actions are
     (?)append command output/responses to the top of control_panel (chronological still lol) instead of responding. also, delete command messages
 
 support mutliple guilds:
-    storing in json?
     among:vc/chat/excluderole should accept optional parameter (actually, might not be possible with among:vc)
     among:unexcluderole to unexclude
     among:help
+    use setter/getter AKA property decorator. this one also auto saves on assignments
 
 commands for all reactions (maybe not):
     among:mute/among:unmute and the like

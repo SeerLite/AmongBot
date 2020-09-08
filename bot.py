@@ -1,4 +1,5 @@
 import os, sys, asyncio
+import json
 import discord
 
 if not (TOKEN := os.getenv("DISCORD_TOKEN")):
@@ -32,28 +33,65 @@ class TrackedMember():
 
 class BotPresence():
     @classmethod
-    async def create(cls, guild, *, text_channel=None, voice_channel=None, excluded_roles=[], muting=False, mimic=None, control_panel=None):
+    async def create(cls, guild, *, text_channel_id=None, voice_channel_id=None, control_panel_id=None, excluded_roles_ids=[]):
         self = BotPresence()
 
         self.guild = guild
-        self.text_channel = text_channel
-        self.voice_channel = voice_channel
-        self.excluded_roles = excluded_roles
-        self.muting = muting
-        self.mimic = mimic
-        self.control_panel = control_panel
+
+        if text_channel_id:
+            self.text_channel = self.guild.get_channel(int(text_channel_id))
+        else:
+            self.text_channel = None
+
+        if voice_channel_id:
+            self.voice_channel = self.guild.get_channel(int(voice_channel_id))
+        else:
+            self.voice_channel = None
+
+        if control_panel_id:
+            # fetch_message() can raise exceptions, handle them
+            self.control_panel = await self.text_channel.fetch_message(int(control_panel_id))
+        else:
+            self.control_panel = None
+
+        self.excluded_roles = [self.guild.get_role(int(id)) for id in excluded_roles_ids]
+        self.muting = False
+        self.mimic = None
         self.tracked_members = []
 
         if self.text_channel and self.voice_channel:
             await self.track_current_voice()
 
+        if self.control_panel:
+            await self.update_control_panel()
+
+        self.save()
         return self
+
+    def save(self):
+        if not str(self.guild.id) in save_data:
+            save_data[str(self.guild.id)] = {}
+        for name, value in (("text", self.text_channel), ("voice", self.voice_channel), ("control", self.control_panel)):
+            if value:
+                save_data[str(self.guild.id)][name] = value.id
+            else:
+                save_data[str(self.guild.id)][name] = None
+
+        save_data[str(self.guild.id)]["exclude"] = [role.id for role in self.excluded_roles]
+
+        try:
+            with open("data.json", "w") as save_file:
+                json.dump(save_data, save_file)
+        except FileNotFoundError:
+            with open("data.json", "x") as save_file:
+                json.dump(save_data, save_file)
 
     async def set_text_channel(self, channel):
         #TODO: check for permissions in channel here. message user personally if can't send to channel
         if channel == self.text_channel:
             raise AlreadyDefinedError("Already listening to channel for commands")
         self.text_channel = channel
+        self.save()
         return self.text_channel
 
     async def set_voice_channel(self, member):
@@ -63,12 +101,14 @@ class BotPresence():
                 return
             #TODO: check for permissions in vc here
             self.voice_channel = member.voice.channel
+            self.save()
             await self.track_current_voice()
             return self.voice_channel
         else:
             if self.voice_channel is None:
                 raise AlreadyDefinedError("Not tracking any voice channel")
             self.voice_channel = None
+            self.save()
 
     async def track_current_voice(self):
         await self.set_mute(False, only_listed=False)
@@ -94,6 +134,7 @@ class BotPresence():
                 else:
                     await self.text_channel.send(f"Error! User {message.author.mention} not in any voice channel on this server! Please join a voice channel first!")
                     self.text_channel = None # TODO: maybe call set_channel(None) instead?
+                    self.save()
         if message.content == "among:text":
             try:
                 await self.set_text_channel(message.channel)
@@ -112,6 +153,7 @@ class BotPresence():
                     elif self.control_panel:
                         await self.control_panel.delete()
                         self.control_panel = None
+                        self.save()
                         await self.text_channel.send(f"User {message.author.mention} not in any voice channel on this server. Stopped tracking voice channel.")
                 except AlreadyDefinedError:
                     if self.voice_channel:
@@ -121,6 +163,7 @@ class BotPresence():
             elif message.content.startswith("among:excluderole"):
                 if message.role_mentions:
                     self.excluded_roles.extend(message.role_mentions)
+                    self.save()
                     # unmute all members from newly excluded role:
                     tasks = []
                     for member in (tracked_member.member for tracked_member in self.tracked_members if any((role in tracked_member.member.roles for role in self.excluded_roles))):
@@ -148,6 +191,7 @@ class BotPresence():
         if self.control_panel:
             await self.control_panel.delete()
         self.control_panel = await self.text_channel.send("```\n```")
+        self.save()
         await self.control_panel.add_reaction('🔈')
         await self.control_panel.add_reaction('©')
         await self.control_panel.add_reaction('🔄')
@@ -231,37 +275,50 @@ class BotPresence():
                     self.tracked_members = []
                 await self.update_control_panel()
 
-    async def on_reaction_add(self, reaction, member):
+    async def on_reaction_add(self, emoji, message_id, member):
         if member.guild != self.guild:
             return
         if self.control_panel is None:
             return
-        if reaction.message.id == self.control_panel.id: # TODO: why doesn't this work here without .id?
-            if reaction.emoji == '🔈':
+        if message_id == self.control_panel.id: # TODO: why doesn't this work without .id?
+            if emoji.name == '🔈':
                 await self.set_mute(not self.muting)
                 await self.update_control_panel()
-            elif reaction.emoji == '©':
+            elif emoji.name == '©':
                 if self.mimic is None:
                     await self.set_mimic(member)
                     await self.update_control_panel()
                 elif member == self.mimic:
                     await self.set_mimic(None)
                     await self.update_control_panel()
-            elif reaction.emoji == '🔄':
+            elif emoji.name == '🔄':
                 for tracked_member in self.tracked_members:
                     tracked_member.dead = False
                 await self.set_mute(False)
                 await self.update_control_panel()
-            await reaction.remove(member)
+            else:
+                print(repr(emoji))
+            # TODO: fetch_message() exception handling (idk if it matters in here tho)
+            message = await self.text_channel.fetch_message(message_id)
+            await message.remove_reaction(emoji, member)
 
 @client.event
 async def on_ready():
     print("Bot is online.")
     client.presences = []
     for guild in client.guilds:
-        client.presences.append(await BotPresence.create(
-            guild
-        ))
+        if str(guild.id) in save_data:
+            client.presences.append(await BotPresence.create(
+                guild,
+                text_channel_id=save_data[str(guild.id)]["text"],
+                voice_channel_id=save_data[str(guild.id)]["voice"],
+                control_panel_id=save_data[str(guild.id)]["control"],
+                excluded_roles_ids=save_data[str(guild.id)]["exclude"],
+            ))
+        else:
+            client.presences.append(await BotPresence.create(
+                guild
+            ))
 
 @client.event
 async def on_guild_join(guild):
@@ -288,12 +345,17 @@ async def on_voice_state_update(member, before, after):
         await presence.on_voice_state_update(member, before, after) # NOTE: will receive updates from all guilds
 
 @client.event
-async def on_reaction_add(reaction, member):
-    if member == client.user:
+async def on_raw_reaction_add(payload):
+    if payload.member == client.user:
         return
     for presence in client.presences:
-        await presence.on_reaction_add(reaction, member) # NOTE: will receive reactions from all guilds
+        await presence.on_reaction_add(payload.emoji, payload.message_id, payload.member) # NOTE: will receive reactions from all guilds
 
 if __name__ == '__main__':
+    try:
+        with open("data.json") as save_file:
+            save_data = json.load(save_file)
+    except FileNotFoundError:
+        save_data = {}
     client.run(TOKEN)
 
