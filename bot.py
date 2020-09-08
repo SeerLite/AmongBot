@@ -46,12 +46,11 @@ class BotPresence():
 
         if self.text_channel and self.voice_channel:
             await self.track_current_voice()
-            #await self.send_control_panel() # or just get the old control_panel back?
 
         return self
 
     async def set_text_channel(self, channel):
-        #TODO: check for permissions in channel here
+        #TODO: check for permissions in channel here. message user personally if can't send to channel
         if channel == self.text_channel:
             raise AlreadyDefinedError("Already listening to channel for commands")
         self.text_channel = channel
@@ -70,7 +69,7 @@ class BotPresence():
             if self.voice_channel is None:
                 raise AlreadyDefinedError("Not tracking any voice channel")
             self.voice_channel = None
-    # TODO: we're creating tracked_members = [] above but below we discard it and just take voice_channel.members. do something about this
+
     async def track_current_voice(self):
         await self.set_mute(False, only_listed=False)
         self.tracked_members = [TrackedMember(member) for member in self.voice_channel.members if not any((role in member.roles for role in self.excluded_roles))]

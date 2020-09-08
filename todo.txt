@@ -1,19 +1,15 @@
 TODOs in code
 
-move send_control_panel() outside of set_voice/text
-
 in usage instructions:
 1. create channel for bot
 2. invite bot
 this to avoid people setting the bot in a general chat channel
 
-once tracked, only mute inside of channel and unmute elsewhere
+once tracked, only mute inside of channel and unmute elsewhere # tis gon be real slow
 
 document all documentable things with docstrings or whatever they're called
 
-fuzzy username killing
-
-message user personally if can't send to channel
+fuzzy username killing/ignoring
 
 untrack/unmute tracked people everytime a new vc is set
     new method reset()?
@@ -22,6 +18,7 @@ combine all messages that come into one, and delete it once required actions are
     (?)append command output/responses to the top of control_panel (chronological still lol) instead of responding. also, delete command messages
 
 support mutliple guilds:
+    storing in json?
     among:vc/chat/excluderole should accept optional parameter (actually, might not be possible with among:vc)
     among:unexcluderole to unexclude
     among:help
