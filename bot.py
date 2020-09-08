@@ -24,12 +24,24 @@ class AlreadyDefinedError(Error):
         return self.msg
 
 class TrackedMember:
-    def __init__(self, member, *, list=True, dead=False, mute=False, ignore=False):
+    def __init__(self, member, presence, *, list=True, dead=False, mute=False, ignore=False):
         self.member = member
+        self.presence = presence
         self.list = list
         self.dead = dead
         self.mute = mute
         self.ignore = ignore
+        self.mute_lock = asyncio.Lock()
+
+    async def set_mute(self, mute_state, *, only_listed=True):
+        async with self.mute_lock:
+            if not self.ignore and (self.list or not only_listed) and self.member.voice and self.member.voice.channel == self.presence.voice_channel:
+                if self.dead and not self.member.voice.mute:
+                    await self.member.edit(mute=True)
+                    self.mute = True
+                elif self.member.voice.mute != mute_state:
+                    await self.member.edit(mute=mute_state)
+                    self.mute = mute_state
 
 class BotPresence:
     @classmethod
@@ -112,7 +124,7 @@ class BotPresence:
 
     async def track_current_voice(self):
         await self.set_mute(False, only_listed=False)
-        self.tracked_members = [TrackedMember(member) for member in self.voice_channel.members if not any((role in member.roles for role in self.excluded_roles))]
+        self.tracked_members = [TrackedMember(member, self) for member in self.voice_channel.members if not any((role in member.roles for role in self.excluded_roles))]
 
     # TODO: maybe it's a good idea to use ext.commands instead of manually doing the stuff
     async def on_message(self, message):
@@ -172,11 +184,7 @@ class BotPresence:
                     self.excluded_roles.extend(message.role_mentions)
                     self.save()
                     # unmute all members from newly excluded role:
-                    tasks = []
-                    for member in (tracked_member.member for tracked_member in self.tracked_members if any((role in tracked_member.member.roles for role in self.excluded_roles))):
-                        tasks.append(member.edit(mute=False))
-                    asyncio.gather(*tasks)
-
+                    asyncio.gather(*(tracked_member.set_mute(False) for tracked_member in self.tracked_members if any((role in tracked_member.member.roles for role in self.excluded_roles))))
                     self.tracked_members = [tracked_member for tracked_member in self.tracked_members if not any((role in tracked_member.member.roles for role in self.excluded_roles))]
                     await self.text_channel.send(f"Now excluding roles:\n{' '.join((role.mention for role in self.excluded_roles))}")
                     await self.update_control_panel()
@@ -223,17 +231,7 @@ class BotPresence:
 
     async def set_mute(self, mute_state, *, only_listed=True):
         self.muting = mute_state
-        tasks = []
-        for tracked_member in self.tracked_members:
-            if not tracked_member.ignore and (tracked_member.list or not only_listed) and tracked_member.member.voice and tracked_member.member.voice.channel == self.voice_channel:
-                if tracked_member.dead:
-                    if not tracked_member.member.voice.mute:
-                        tasks.append(tracked_member.member.edit(mute=True))
-                        tracked_member.mute = True
-                elif tracked_member.member.voice.mute != mute_state:
-                    tasks.append(tracked_member.member.edit(mute=mute_state))
-                    tracked_member.mute = mute_state
-        await asyncio.gather(*tasks)
+        await asyncio.gather(*(tracked_member.set_mute(mute_state) for tracked_member in self.tracked_members))
 
     async def set_mimic(self, member):
         if member:
@@ -264,7 +262,7 @@ class BotPresence:
         if before.channel != after.channel:
             if after.channel == self.voice_channel:
                 if not member in (tracked_member.member for tracked_member in self.tracked_members):
-                    self.tracked_members.append(TrackedMember(member, ignore=True if member.voice.mute != self.muting else False)) # ignore new members that don't match current mute state
+                    self.tracked_members.append(TrackedMember(member, self, ignore=True if member.voice.mute != self.muting else False)) # ignore new members that don't match current mute state
                     await self.update_control_panel()
                 else:
                     for tracked_member in self.tracked_members:

@@ -37,3 +37,5 @@ reaction: admin-only
 
 add agplv3 license
 
+low priority: clear all invalid reactions on startup
+
