@@ -5,11 +5,14 @@ in usage instructions:
 2. invite bot
 this to avoid people setting the bot in a general chat channel
 
+among:setup doesn't work when only switching text channels
+
 once tracked, only mute inside of channel and unmute elsewhere # tis gon be real slow
 
 document all documentable things with docstrings or whatever they're called
 
 fuzzy username killing/ignoring
+multiple numbers (space-separated) in same message
 
 untrack/unmute tracked people everytime a new vc is set
     new method reset()?
