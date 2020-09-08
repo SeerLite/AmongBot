@@ -150,7 +150,8 @@ class BotPresence:
     async def on_message(self, message):
         if message.guild != self.guild:
             return
-        if message.content == "among:setup":
+        if message.content == "among:setup": # TODO: make this a method?
+            # TODO: make this logic cleaner in some way (idk how rn)
             try:
                 self.text_channel = message.channel
             except AlreadyDefinedError:
@@ -170,7 +171,7 @@ class BotPresence:
                 else:
                     await self.text_channel.send(f"Error! User {message.author.mention} not in any voice channel on this server! Please join a voice channel first!")
                     self.text_channel = None
-        if message.content == "among:text":
+        elif message.content == "among:text":
             try:
                 self.text_channel = message.channel
                 await self.text_channel.send(f"Current channel {self.text_channel.mention} set as {client.user.name}'s channel!\n"
