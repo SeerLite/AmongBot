@@ -8,7 +8,7 @@ maybe DO remember members and their states?
 control panel:
     format:
         move (STATE) to after display_name
-        show all "unlisted" and "gone but muted so listed" with a different left-padding?
+        show all "unlisted" and "gone but muted so listed" with a different left-padding? or show them at the bottom?
     fuzzy username killing/ignoring
     multiple numbers (space-separated) in same message
 
