@@ -1,5 +1,7 @@
 TODOs in code
 
+make ControlPanel class? (everything is an object??)
+
 mimic -> copy. toggles on deafen but not on undeafen. that way we can still hear dem music bots :yeah:
 
 maybe DO remember members and their states?
