@@ -189,7 +189,7 @@ class BotPresence:
                         await self.text_channel.send(f"All good! Listening for commands only on {self.text_channel.mention} and tracking {self.voice_channel.name}.")
                         await self.send_control_panel()
             else:
-                await self.text_channel.send(f"Error! User {message.author.mention} not in any voice channel on this server! Please join a voice channel first!")
+                await message.channel.send(f"Error! User {message.author.mention} not in any voice channel on this server! Please join a voice channel first!")
         elif message.content == "among:text":
             try:
                 self.text_channel = message.channel
