@@ -34,21 +34,23 @@ class TrackedMember:
         self.presence = presence
         self.list = list
         self.dead = dead
-        self.mute = mute
+        self._mute = mute
         self.ignore = ignore
         self.mute_lock = asyncio.Lock()
+
+    @property
+    def mute(self):
+        return self._mute
 
     async def set_mute(self, mute_state, *, only_listed=True):
         async with self.mute_lock:
             if not self.ignore and (self.list or not only_listed) and self.member.voice and self.member.voice.channel == self.presence.voice_channel:
                 if self.dead:
-                    # TODO set mute here and after everything check voice != mute and set them
-                    if not self.member.voice.mute:
-                        await self.member.edit(mute=True)
-                        self.mute = True
-                elif self.member.voice.mute != mute_state:
-                    await self.member.edit(mute=mute_state)
-                    self.mute = mute_state
+                    self._mute = True
+                else:
+                    self._mute = mute_state
+                if self.member.voice.mute != self._mute:
+                    await self.member.edit(mute=self._mute)
 
 
 class BotPresence:
