@@ -59,23 +59,17 @@ class BotPresence:
         self = BotPresence()
 
         self.guild = guild
+        self._text_channel = None
+        self._voice_channel = None
+        self.control_panel = None
 
         if text_channel_id:
             self._text_channel = self.guild.get_channel(int(text_channel_id))
-        else:
-            self._text_channel = None
-
         if voice_channel_id:
             self._voice_channel = self.guild.get_channel(int(voice_channel_id))
-        else:
-            self._voice_channel = None
-
         if control_panel_id:
             # TODO: fetch_message() can raise exceptions, handle them
             self.control_panel = await self.text_channel.fetch_message(int(control_panel_id))
-        else:
-            self.control_panel = None
-
         self._excluded_roles = frozenset(self.guild.get_role(int(id)) for id in excluded_roles_ids)  # frozen cause we're only assigning anyway
         self._muting = False
         self.muting_lock = asyncio.Lock()
