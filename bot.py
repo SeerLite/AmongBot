@@ -67,7 +67,8 @@ class BotPresence:
             self.control_panel = None
 
         self._excluded_roles = frozenset(self.guild.get_role(int(id)) for id in excluded_roles_ids) # frozen cause we're only assigning anyway
-        self.muting = False
+        self._muting = False
+        self.muting_lock = asyncio.Lock()
         self.mimic = None
         self.tracked_members = []
 
@@ -124,6 +125,16 @@ class BotPresence:
         self._excluded_roles = excluded_roles
         self.save()
 
+    @property
+    def muting(self):
+        return self._muting
+
+    async def set_muting(self, mute_state, *, only_listed=True):
+        with self.muting_lock:
+            self._muting = mute_state
+            await asyncio.gather(*(tracked_member.set_mute(mute_state) for tracked_member in self.tracked_members))
+
+
     def save(self):
         if not str(self.guild.id) in save_data:
             save_data[str(self.guild.id)] = {}
@@ -143,7 +154,7 @@ class BotPresence:
                 json.dump(save_data, save_file)
 
     async def track_current_voice(self):
-        await self.set_mute(False, only_listed=False)
+        await self.set_muting(False, only_listed=False)
         self.tracked_members = [TrackedMember(member, self, ignore=True if member.voice.mute != self.muting else False) for member in self.voice_channel.members if not any((role in self.excluded_roles for role in member.roles))]
 
     # TODO: maybe it's a good idea to use ext.commands instead of manually doing the stuff
@@ -233,7 +244,7 @@ class BotPresence:
                             self.tracked_members[index].dead = not self.tracked_members[index].dead
                     else: # if index is negative, toggle ignore instead of dead
                         self.tracked_members[index].ignore = not self.tracked_members[index].ignore
-                    await self.set_mute(self.muting)
+                    await self.set_muting(self.muting)
                     await self.update_control_panel()
 
     async def send_control_panel(self):
@@ -264,15 +275,11 @@ class BotPresence:
             control_panel_text += "Not mimicking! React with :copyright: to mimic you!"
         await self.control_panel.edit(content=control_panel_text)
 
-    async def set_mute(self, mute_state, *, only_listed=True):
-        self.muting = mute_state
-        await asyncio.gather(*(tracked_member.set_mute(mute_state) for tracked_member in self.tracked_members))
-
     async def set_mimic(self, member):
         if member:
             if member.voice and member.voice.channel == self.voice_channel:
                 self.mimic = member
-                await self.set_mute(self.muting) # TODO: maybe set_mute() with no args should default to current mute
+                await self.set_muting(self.muting) # TODO: maybe set_muting() with no args should default to current mute
                 return True
             else:
                 return False
@@ -289,7 +296,7 @@ class BotPresence:
         if member == self.mimic:
             if after.channel == self.voice_channel: # Status changed inside channel
                 if before.self_deaf != after.self_deaf:
-                    await self.set_mute(after.self_deaf)
+                    await self.set_muting(after.self_deaf)
                     await self.update_control_panel()
             else:                                # Whoops, not in channel anymore?
                 await self.set_mimic(None)
@@ -311,7 +318,7 @@ class BotPresence:
                             tracked_member.list = False
 
                 if not any((tracked_member.list for tracked_member in self.tracked_members)): # reset indexes when managed members leave
-                    await self.set_mute(False, only_listed=False)
+                    await self.set_muting(False, only_listed=False)
                     self.tracked_members = []
                 await self.update_control_panel()
 
@@ -322,7 +329,7 @@ class BotPresence:
             return
         if message_id == self.control_panel.id: # TODO: why doesn't this work without .id?
             if emoji.name == '🔈':
-                await self.set_mute(not self.muting)
+                await self.set_muting(not self.muting)
                 await self.update_control_panel()
             elif emoji.name == '©':
                 if self.mimic is None:
@@ -334,7 +341,7 @@ class BotPresence:
             elif emoji.name == '🔄':
                 for tracked_member in self.tracked_members:
                     tracked_member.dead = False
-                await self.set_mute(False)
+                await self.set_muting(False)
                 await self.update_control_panel()
             else:
                 print(repr(emoji))
