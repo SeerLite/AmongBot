@@ -2,12 +2,16 @@ TODOs in code
 
 mimic -> copy. toggles on deafen but not on undeafen
 
+maybe DO remember members and their states?
+
+control panel: move (STATE) to after display_name in format
+
+ignored members can cause problems when unmuting
+
 in usage instructions:
 1. create channel for bot
 2. invite bot
 this to avoid people setting the bot in a general chat channel
-
-among:setup doesn't work when only switching text channels
 
 once tracked, only mute inside of channel and unmute elsewhere # tis gon be real slow
 
