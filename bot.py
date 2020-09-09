@@ -16,7 +16,7 @@ class Error(Exception):
     """Base class for exceptions in amongbot"""
     pass
 
-class AlreadyDefinedError(Error):
+class SameValueError(Error):
     def __init__(self, msg=None):
         self.msg = msg
 
@@ -89,7 +89,7 @@ class BotPresence:
     def text_channel(self, channel):
         #TODO: check for permissions in channel here. message user personally if can't send to channel
         if self._text_channel == channel:
-            raise AlreadyDefinedError
+            raise SameValueError
         self._text_channel = channel
         self.save()
 
@@ -100,7 +100,7 @@ class BotPresence:
     @voice_channel.setter
     def voice_channel(self, channel):
         if self._voice_channel == channel:
-            raise AlreadyDefinedError
+            raise SameValueError
         #TODO: check for permissions in vc here
         self._voice_channel = channel
         self.save()
@@ -111,7 +111,7 @@ class BotPresence:
 
     async def set_excluded_roles(self, excluded_roles):
         if self._excluded_roles == excluded_roles:
-            raise AlreadyDefinedError
+            raise SameValueError
         if new_excludes := excluded_roles.difference(self._excluded_roles): # only if there's _new_ roles
             # unmute and untrack all members from newly excluded role
             await asyncio.gather(*(tracked_member.set_mute(False) for tracked_member in self.tracked_members if any((role in new_excludes for role in tracked_member.member.roles))))
@@ -165,7 +165,7 @@ class BotPresence:
             # TODO: make this logic cleaner in some way (idk how rn)
             try:
                 self.text_channel = message.channel
-            except AlreadyDefinedError:
+            except SameValueError:
                 pass
 
             try:
@@ -176,7 +176,7 @@ class BotPresence:
                     self.voice_channel = None
                 await self.text_channel.send(f"All good! Listening for commands only on {self.text_channel.mention} and tracking {self.voice_channel.name}.")
                 await self.send_control_panel()
-            except AlreadyDefinedError:
+            except SameValueError:
                 if self.voice_channel:
                     await self.text_channel.send(f"Already set up! This is {client.user.display_name}'s channel and currently tracking {self.voice_channel.name}.")
                 else:
@@ -189,7 +189,7 @@ class BotPresence:
                                              f"Now accepting commands here.")
                 if self.voice_channel:
                     await self.send_control_panel()
-            except AlreadyDefinedError:
+            except SameValueError:
                 await self.text_channel.send(f"Error! This channel is already {client.user.name}'s channel.")
         elif message.channel == self.text_channel:
             if message.content == "among:vc":
@@ -206,7 +206,7 @@ class BotPresence:
                             self.control_panel = None
                             self.save()
                         await self.text_channel.send(f"User {message.author.mention} not in any voice channel on this server. Stopped tracking voice channel.")
-                except AlreadyDefinedError:
+                except SameValueError:
                     if self.voice_channel:
                         await self.text_channel.send(f"Error! {self.voice_channel.name} is already tracked. To untrack, run `among:vc` while not connected to any channel.")
                     else:
@@ -218,7 +218,7 @@ class BotPresence:
                         await self.set_excluded_roles(self.excluded_roles.union(message.role_mentions))
                         await self.text_channel.send(f"Now excluding roles:\n{' '.join((role.mention for role in self.excluded_roles))}")
                         await self.update_control_panel()
-                    except AlreadyDefinedError:
+                    except SameValueError:
                         await self.text_channel.send("Error! All mentioned roles were already excluded.")
                 else:
                     await self.text_channel.send("Error! No role mentions detected!\nUsage: `among:excluderole <role mention>...`")
@@ -231,7 +231,7 @@ class BotPresence:
                         else:
                             await self.text_channel.send("No longer excluding any roles.")
                         await self.update_control_panel()
-                    except AlreadyDefinedError:
+                    except SameValueError:
                         await self.text_channel.send(f"Error! None of the mentioned roles were excluded.")
                 else:
                     await self.text_channel.send("Error! No role mentions detected!\nUsage: `among:excluderole <role mention>...`")
