@@ -310,7 +310,7 @@ class BotPresence:
                 if before.self_deaf != after.self_deaf:
                     await self.set_muting(after.self_deaf)
                     await self.update_control_panel()
-            else:                                # Whoops, not in channel anymore?
+            else:                                    # Whoops, not in channel anymore?
                 await self.set_mimic(None)
                 await self.update_control_panel()
         if before.channel != after.channel:

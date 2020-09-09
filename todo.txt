@@ -1,5 +1,7 @@
 TODOs in code
 
+mimic -> copy. toggles on deafen but not on undeafen
+
 in usage instructions:
 1. create channel for bot
 2. invite bot
