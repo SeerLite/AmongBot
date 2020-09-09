@@ -1,4 +1,6 @@
-import os, sys, asyncio
+import os
+import sys
+import asyncio
 import json
 import discord
 
@@ -12,9 +14,11 @@ if not (TOKEN := os.getenv("DISCORD_TOKEN")):
 
 client = discord.Client()
 
+
 class Error(Exception):
     """Base class for exceptions in amongbot"""
     pass
+
 
 class SameValueError(Error):
     def __init__(self, msg=None):
@@ -22,6 +26,7 @@ class SameValueError(Error):
 
     def __str__(self):
         return self.msg
+
 
 class TrackedMember:
     def __init__(self, member, presence, *, list=True, dead=False, mute=False, ignore=False):
@@ -42,6 +47,7 @@ class TrackedMember:
                 elif self.member.voice.mute != mute_state:
                     await self.member.edit(mute=mute_state)
                     self.mute = mute_state
+
 
 class BotPresence:
     @classmethod
@@ -66,7 +72,7 @@ class BotPresence:
         else:
             self.control_panel = None
 
-        self._excluded_roles = frozenset(self.guild.get_role(int(id)) for id in excluded_roles_ids) # frozen cause we're only assigning anyway
+        self._excluded_roles = frozenset(self.guild.get_role(int(id)) for id in excluded_roles_ids)  # frozen cause we're only assigning anyway
         self._muting = False
         self.muting_lock = asyncio.Lock()
         self.mimic = None
@@ -87,7 +93,7 @@ class BotPresence:
 
     @text_channel.setter
     def text_channel(self, channel):
-        #TODO: check for permissions in channel here. message user personally if can't send to channel
+        # TODO: check for permissions in channel here. message user personally if can't send to channel
         if self._text_channel == channel:
             raise SameValueError
         self._text_channel = channel
@@ -101,7 +107,7 @@ class BotPresence:
     def voice_channel(self, channel):
         if self._voice_channel == channel:
             raise SameValueError
-        #TODO: check for permissions in vc here
+        # TODO: check for permissions in vc here
         self._voice_channel = channel
         self.save()
 
@@ -112,11 +118,11 @@ class BotPresence:
     async def set_excluded_roles(self, excluded_roles):
         if self._excluded_roles == excluded_roles:
             raise SameValueError
-        if new_excludes := excluded_roles.difference(self._excluded_roles): # only if there's _new_ roles
+        if new_excludes := excluded_roles.difference(self._excluded_roles):  # only if there's _new_ roles
             # unmute and untrack all members from newly excluded role
             await asyncio.gather(*(tracked_member.set_mute(False) for tracked_member in self.tracked_members if any((role in new_excludes for role in tracked_member.member.roles))))
             self.tracked_members = [tracked_member for tracked_member in self.tracked_members if not any((role in new_excludes for role in tracked_member.member.roles))]
-        elif new_unexcludes := self._excluded_roles.union(excluded_roles): # only if there's _less_ roles
+        elif new_unexcludes := self._excluded_roles.union(excluded_roles):  # only if there's _less_ roles
             # track and mute newly unexcluded roles
             for member in self.voice_channel.members:
                 if any(role in new_unexcludes for role in member.roles):
@@ -133,7 +139,6 @@ class BotPresence:
         with self.muting_lock:
             self._muting = mute_state
             await asyncio.gather(*(tracked_member.set_mute(mute_state) for tracked_member in self.tracked_members))
-
 
     def save(self):
         if not str(self.guild.id) in save_data:
@@ -161,7 +166,7 @@ class BotPresence:
     async def on_message(self, message):
         if message.guild != self.guild:
             return
-        if message.content == "among:setup": # TODO: make this a method?
+        if message.content == "among:setup":  # TODO: make this a method?
             # TODO: make this logic cleaner in some way (idk how rn)
             try:
                 self.text_channel = message.channel
@@ -232,7 +237,7 @@ class BotPresence:
                             await self.text_channel.send("No longer excluding any roles.")
                         await self.update_control_panel()
                     except SameValueError:
-                        await self.text_channel.send(f"Error! None of the mentioned roles were excluded.")
+                        await self.text_channel.send("Error! None of the mentioned roles were excluded.")
                 else:
                     await self.text_channel.send("Error! No role mentions detected!\nUsage: `among:excluderole <role mention>...`")
             elif message.content.isdigit() or (message.content[0] == "-" and message.content[1:].isdigit()):
@@ -242,7 +247,7 @@ class BotPresence:
                     if int(message.content) > 0:
                         if not self.tracked_members[index].ignore:
                             self.tracked_members[index].dead = not self.tracked_members[index].dead
-                    else: # if index is negative, toggle ignore instead of dead
+                    else:  # if index is negative, toggle ignore instead of dead
                         self.tracked_members[index].ignore = not self.tracked_members[index].ignore
                     await self.set_muting(self.muting)
                     await self.update_control_panel()
@@ -267,6 +272,7 @@ class BotPresence:
         )
         # TODO
         for tracked_member in (tracked_member for tracked_member in self.tracked_members if tracked_member.list):
+            # TODO: make this line shorter
             control_panel_text += f"{self.tracked_members.index(tracked_member) + 1}. {'(IGNORED)' if tracked_member.ignore else ' (DEAD)  ' if tracked_member.dead else ' (MUTED) ' if tracked_member.mute else ' (ALIVE) '} {tracked_member.member.display_name.ljust(max((len(tracked_member.member.display_name) for tracked_member in self.tracked_members)))} | {tracked_member.member.name}#{tracked_member.member.discriminator}\n"
         control_panel_text += "```"
         if self.mimic:
@@ -279,7 +285,7 @@ class BotPresence:
         if member:
             if member.voice and member.voice.channel == self.voice_channel:
                 self.mimic = member
-                await self.set_muting(self.muting) # TODO: maybe set_muting() with no args should default to current mute
+                await self.set_muting(self.muting)  # TODO: maybe set_muting() with no args should default to current mute
                 return True
             else:
                 return False
@@ -294,7 +300,7 @@ class BotPresence:
         if any((role in self.excluded_roles for role in member.roles)):
             return
         if member == self.mimic:
-            if after.channel == self.voice_channel: # Status changed inside channel
+            if after.channel == self.voice_channel:  # Status changed inside channel
                 if before.self_deaf != after.self_deaf:
                     await self.set_muting(after.self_deaf)
                     await self.update_control_panel()
@@ -303,8 +309,8 @@ class BotPresence:
                 await self.update_control_panel()
         if before.channel != after.channel:
             if after.channel == self.voice_channel:
-                if not member in (tracked_member.member for tracked_member in self.tracked_members):
-                    self.tracked_members.append(TrackedMember(member, self, ignore=True if member.voice.mute != self.muting else False)) # ignore new members that don't match current mute state
+                if member not in (tracked_member.member for tracked_member in self.tracked_members):
+                    self.tracked_members.append(TrackedMember(member, self, ignore=True if member.voice.mute != self.muting else False))  # ignore new members that don't match current mute state
                     await self.update_control_panel()
                 else:
                     for tracked_member in self.tracked_members:
@@ -312,12 +318,12 @@ class BotPresence:
                             tracked_member.list = True
                             await self.update_control_panel()
             elif after.channel != self.voice_channel:
-                if member in (tracked_member.member for tracked_member in self.tracked_members): # stop listing tracked_members who leave (but don't stop tracking them unless there's no more tracked members!)
+                if member in (tracked_member.member for tracked_member in self.tracked_members):  # stop listing tracked_members who leave (but don't stop tracking them unless there's no more tracked members!)
                     for tracked_member in self.tracked_members:
                         if member == tracked_member.member and tracked_member.list and (not tracked_member.mute or tracked_member.ignore):
                             tracked_member.list = False
 
-                if not any((tracked_member.list for tracked_member in self.tracked_members)): # reset indexes when managed members leave
+                if not any((tracked_member.list for tracked_member in self.tracked_members)):  # reset indexes when managed members leave
                     await self.set_muting(False, only_listed=False)
                     self.tracked_members = []
                 await self.update_control_panel()
@@ -327,7 +333,7 @@ class BotPresence:
             return
         if self.control_panel is None:
             return
-        if message_id == self.control_panel.id: # TODO: why doesn't this work without .id?
+        if message_id == self.control_panel.id:  # TODO: why doesn't this work without .id?
             if emoji.name == '🔈':
                 await self.set_muting(not self.muting)
                 await self.update_control_panel()
@@ -349,6 +355,7 @@ class BotPresence:
             message = await self.text_channel.fetch_message(message_id)
             await message.remove_reaction(emoji, member)
 
+
 @client.event
 async def on_ready():
     print("Bot is online.")
@@ -367,36 +374,41 @@ async def on_ready():
                 guild
             ))
 
+
 @client.event
 async def on_guild_join(guild):
     client.presences.append(await BotPresence.create(
         guild
     ))
 
+
 @client.event
 async def on_guild_remove(guild):
     client.presences = [presence for presence in client.presences if presence.guild != guild]
+
 
 @client.event
 async def on_message(message):
     if message.author == client.user:
         return
     for presence in client.presences:
-        await presence.on_message(message) # NOTE: will receive messages from all guilds
+        await presence.on_message(message)  # NOTE: will receive messages from all guilds
+
 
 @client.event
 async def on_voice_state_update(member, before, after):
     if member == client.user:
         return
     for presence in client.presences:
-        await presence.on_voice_state_update(member, before, after) # NOTE: will receive updates from all guilds
+        await presence.on_voice_state_update(member, before, after)  # NOTE: will receive updates from all guilds
+
 
 @client.event
 async def on_raw_reaction_add(payload):
     if payload.member == client.user:
         return
     for presence in client.presences:
-        await presence.on_reaction_add(payload.emoji, payload.message_id, payload.member) # NOTE: will receive reactions from all guilds
+        await presence.on_reaction_add(payload.emoji, payload.message_id, payload.member)  # NOTE: will receive reactions from all guilds
 
 if __name__ == '__main__':
     try:
@@ -405,4 +417,3 @@ if __name__ == '__main__':
     except FileNotFoundError:
         save_data = {}
     client.run(TOKEN)
-
