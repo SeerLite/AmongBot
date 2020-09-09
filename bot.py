@@ -41,9 +41,11 @@ class TrackedMember:
     async def set_mute(self, mute_state, *, only_listed=True):
         async with self.mute_lock:
             if not self.ignore and (self.list or not only_listed) and self.member.voice and self.member.voice.channel == self.presence.voice_channel:
-                if self.dead and not self.member.voice.mute:
-                    await self.member.edit(mute=True)
-                    self.mute = True
+                if self.dead:
+                    # TODO set mute here and after everything check voice != mute and set them
+                    if not self.member.voice.mute:
+                        await self.member.edit(mute=True)
+                        self.mute = True
                 elif self.member.voice.mute != mute_state:
                     await self.member.edit(mute=mute_state)
                     self.mute = mute_state
