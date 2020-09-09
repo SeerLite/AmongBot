@@ -140,7 +140,7 @@ class BotPresence:
     async def set_muting(self, mute_state, *, only_listed=True):
         async with self.muting_lock:
             self._muting = mute_state
-            await asyncio.gather(*(tracked_member.set_mute(mute_state) for tracked_member in self.tracked_members))
+            await asyncio.gather(*(tracked_member.set_mute(mute_state, only_listed=only_listed) for tracked_member in self.tracked_members))
 
     def save(self):
         if not str(self.guild.id) in save_data:
