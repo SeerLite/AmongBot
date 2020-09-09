@@ -1,50 +1,55 @@
 TODOs in code
 
-mimic -> copy. toggles on deafen but not on undeafen
+mimic -> copy. toggles on deafen but not on undeafen. that way we can still hear dem music bots :yeah:
 
 maybe DO remember members and their states?
+    so we can still unmute members who left muted
 
-control panel: move (STATE) to after display_name in format
+control panel:
+    format:
+        move (STATE) to after display_name
+        show all "unlisted" and "gone but muted so listed" with a different left-padding?
+    fuzzy username killing/ignoring
+    multiple numbers (space-separated) in same message
 
-ignored members can cause problems when unmuting
+issues:
+    ignored members can cause problems when unmuting
+    unignoring -> sets to muted if muted before?
 
-in usage instructions:
-1. create channel for bot
-2. invite bot
-this to avoid people setting the bot in a general chat channel
+untrack/unmute tracked people everytime a new vc is set # does this already happen?
+    new method reset()?
 
 once tracked, only mute inside of channel and unmute elsewhere # tis gon be real slow
 
-document all documentable things with docstrings or whatever they're called
-
-fuzzy username killing/ignoring
-multiple numbers (space-separated) in same message
-
-untrack/unmute tracked people everytime a new vc is set
-    new method reset()?
-
-combine all messages that come into one, and delete it once required actions are completed
-    (?)append command output/responses to the top of control_panel (chronological still lol) instead of responding. also, delete command messages
+setting up:
+    append command output/responses to the top of control_panel (chronological still lol) instead of responding. also, delete command messages
+    maybe resend the control panel after every message or something idk make the control panel stay at the bottom ughgh
 
 support mutliple guilds:
-    among:vc/chat/excluderole should accept optional parameter (actually, might not be possible with among:vc)
-    among:unexcluderole to unexclude
     among:help
 
 commands for all reactions (maybe not):
     among:mute/among:unmute and the like
     maybe a new Action class that sets up reaction listening, default reaction sending (the reaction sent by the bot to the control panel) and respective commands
 
-reaction: join
-    joins the voice channel
-    when joined, plays sounds before muting and after unmuting everyone
+voice presence:
+    new reaction: joins the voice channel
+    when on the vc, plays sounds before muting and after unmuting everyone
 
-reaction: admin-only
-    only act when admin reacts
-    needs a prepared admin role set up with among:admin_role
-    maybe can be easier set up if channel is only visible to admin (+bot ofc)
+reaction: admin-takeover
+    AKA among:takeover
+    only act when admin reacts/sends commands
+    needs a prepared admin role set up with among:admin_role (actually maybe the API provides a way to see if the user is admin)
 
-add agplv3 license
+on release:
+    document all documentable things with docstrings or whatever they're called
+    add agplv3 license
+    add a way to get to the source code (through a command? through among:help?)
+    in usage instructions:
+        1. create channel for bot
+        2. invite bot
+        this to avoid people setting the bot in a general chat channel
 
-low priority: clear all invalid reactions on startup
+low priority:
+    on startup clear all invalid reactions on old control panel
 
