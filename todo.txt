@@ -2,6 +2,10 @@ TODOs in code
 
 make ControlPanel class? (everything is an object??)
 
+make the bot work on dedicated servers with multiple channels:
+    multiple self.text_channels and bound voice_channels
+    among:assign (only command necessary): tracks the authors voice channel and sends a control panel to the channel where it was sent
+
 mimic -> copy. toggles on deafen but not on undeafen. that way we can still hear dem music bots :yeah:
 
 maybe DO remember members and their states?
