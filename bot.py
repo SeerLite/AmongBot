@@ -268,17 +268,18 @@ class BotPresence:
                         await self.text_channel.send("Error! None of the mentioned roles were excluded.")
                 else:
                     await self.text_channel.send("Error! No role mentions detected!\nUsage: `among:excluderole <role mention>...`")
-            elif message.content.isdigit() or (message.content and message.content[0] == "-" and message.content[1:].isdigit()):
-                index = abs(int(message.content)) - 1
-                if index in range(len(self.tracked_members)):
-                    await message.delete()
-                    if int(message.content) > 0:
-                        if not self.tracked_members[index].ignore:
-                            self.tracked_members[index].dead = not self.tracked_members[index].dead
-                    else:  # if index is negative, toggle ignore instead of dead
-                        self.tracked_members[index].ignore = not self.tracked_members[index].ignore
-                    await self.set_muting(self.muting)
-                    await self.update_control_panel()
+            elif all(received_index.isdigit() or (received_index and message.content[0] == "-" and received_index[1:].isdigit()) for received_index in message.content.split(" ")):
+                await message.delete()
+                for received_index in message.content.split(" "):
+                    index = abs(int(received_index)) - 1
+                    if index in range(len(self.tracked_members)):
+                        if int(received_index) > 0:
+                            if not self.tracked_members[index].ignore:
+                                self.tracked_members[index].dead = not self.tracked_members[index].dead
+                        else:  # if index is negative, toggle ignore instead of dead
+                            self.tracked_members[index].ignore = not self.tracked_members[index].ignore
+                await self.set_muting(self.muting)
+                await self.update_control_panel()
 
     async def send_control_panel(self):
         if self.control_panel:
