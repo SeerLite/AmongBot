@@ -41,9 +41,16 @@ class TrackedMember:
     def mute(self):
         return self._mute
 
+    @property
+    def is_in_vc(self):
+        if self.member.voice and self.member.voice.channel == self.presence.voice_channel:
+            return True
+        else:
+            return False
+
     async def set_mute(self, mute_state):
         async with self.mute_lock:
-            if not self.ignore and self.member.voice and self.member.voice.channel == self.presence.voice_channel:
+            if not self.ignore and self.is_in_vc:
                 if self.dead:
                     self._mute = True
                 else:
@@ -273,16 +280,16 @@ class BotPresence:
         )
         for tracked_member in self.tracked_members:
             # TODO: make this line shorter
-            control_panel_text += f"`{' --' if not tracked_member.member.voice or tracked_member.member.voice.channel != self.voice_channel else str(self.tracked_members.index(tracked_member) + 1).rjust(3)}. {tracked_member.member.display_name.ljust(max(len(tracked_member.member.display_name) for tracked_member in self.tracked_members))} {'(IGNORED)' if tracked_member.ignore else '   (DEAD)' if tracked_member.dead else '  (MUTED)' if tracked_member.mute else '   (LEFT)' if not tracked_member.member.voice or tracked_member.member.voice.channel != self.voice_channel else '  (ALIVE)'}` {tracked_member.member.mention} \n"
+            control_panel_text += f"`{' --' if not tracked_member.is_in_vc else str(self.tracked_members.index(tracked_member) + 1).rjust(3)}. {tracked_member.member.display_name.ljust(max(len(tracked_member.member.display_name) for tracked_member in self.tracked_members))} {'(IGNORED)' if tracked_member.ignore else '   (DEAD)' if tracked_member.dead else '  (MUTED)' if tracked_member.mute else '   (LEFT)' if not tracked_member.is_in_vc else '  (ALIVE)'}` {tracked_member.member.mention} \n"
         if self.mimic:
             control_panel_text += f"**Mimicking:** {self.mimic.mention}. Quickly deafen and undeafen yourself to toggle global mute."
         else:
             control_panel_text += "Not mimicking! React with :copyright: to mimic you!"
         await self.control_panel.edit(content=control_panel_text)
 
-    async def set_mimic(self, member):
+    async def set_mimic(self, member):  # TODO: use TrackedMember instead of Member
         if member:
-            if member.voice and member.voice.channel == self.voice_channel:
+            if member.voice and member.voice.channel == self.voice_channel:  # TODO: and make this use is_in_vc
                 self.mimic = member
                 await self.set_muting(self.muting)  # TODO: maybe set_muting() with no args should default to current mute
                 return True
@@ -315,7 +322,7 @@ class BotPresence:
                     self.tracked_members.append(TrackedMember(member, self, ignore=True if member.voice.mute != self.muting else False))  # ignore new members that don't match current mute state
                 await self.update_control_panel()
             elif after.channel != self.voice_channel:
-                if not any((tracked_member.member.voice and tracked_member.member.voice.channel == self.voice_channel for tracked_member in self.tracked_members)):  # reset indexes when all managed members leave
+                if not any((tracked_member.is_in_vc for tracked_member in self.tracked_members)):  # reset indexes when all managed members leave
                     await self.set_muting(False)
                     self.tracked_members = []
                 await self.update_control_panel()
