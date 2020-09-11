@@ -3,6 +3,7 @@ import sys
 import asyncio
 import json
 import discord
+from enum import Enum
 
 if not (TOKEN := os.getenv("DISCORD_TOKEN")):
     try:
@@ -28,6 +29,10 @@ class SameValueError(Error):
         return self.value
 
 
+class TrackedMemberState(Enum):
+    ALIVE, MUTED, DEAD, AWAY, IGNORED = range(5)
+
+
 class TrackedMember:
     def __init__(self, member, presence, *, dead=False, mute=False, ignore=False):
         self.member = member
@@ -41,13 +46,6 @@ class TrackedMember:
     def mute(self):
         return self._mute
 
-    @property
-    def is_in_vc(self):
-        if self.member.voice and self.member.voice.channel == self.presence.voice_channel:
-            return True
-        else:
-            return False
-
     async def set_mute(self, mute_state):
         async with self.mute_lock:
             if not self.ignore and self.is_in_vc:
@@ -57,6 +55,28 @@ class TrackedMember:
                     self._mute = mute_state
                 if self.member.voice.mute != self._mute:
                     await self.member.edit(mute=self._mute)
+
+    @property
+    def state(self):
+        if self.is_in_vc:
+            if self.ignore:
+                return "IGNORED"
+            elif self.dead:
+                return "DEAD"
+            elif self.mute:
+                return "MUTED"
+            else:
+                return "ALIVE"
+        else:
+            return "AWAY"
+
+    @property
+    def is_in_vc(self):
+        if self.member.voice and self.member.voice.channel == self.presence.voice_channel:
+            return True
+        else:
+            return False
+
 
 
 class BotPresence:
@@ -280,7 +300,10 @@ class BotPresence:
         )
         for tracked_member in self.tracked_members:
             # TODO: make this line shorter
-            control_panel_text += f"`{' --' if not tracked_member.is_in_vc else str(self.tracked_members.index(tracked_member) + 1).rjust(3)}. {tracked_member.member.display_name.ljust(max(len(tracked_member.member.display_name) for tracked_member in self.tracked_members))} {'(IGNORED)' if tracked_member.ignore else '   (DEAD)' if tracked_member.dead else '  (MUTED)' if tracked_member.mute else '   (LEFT)' if not tracked_member.is_in_vc else '  (ALIVE)'}` {tracked_member.member.mention} \n"
+            control_panel_text += (f"`{' --' if not tracked_member.is_in_vc else str(self.tracked_members.index(tracked_member) + 1).rjust(3)}. "
+                                   f"{tracked_member.member.display_name.ljust(max(len(tracked_member.member.display_name) for tracked_member in self.tracked_members))} "
+                                   f"{ ('(' + tracked_member.state + ')').rjust(9)}` "
+                                   f"{tracked_member.member.mention}\n")
         if self.mimic:
             control_panel_text += f"**Mimicking:** {self.mimic.mention}. Quickly deafen and undeafen yourself to toggle global mute."
         else:
