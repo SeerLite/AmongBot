@@ -268,8 +268,7 @@ class BotPresence:
                         await self.text_channel.send("Error! None of the mentioned roles were excluded.")
                 else:
                     await self.text_channel.send("Error! No role mentions detected!\nUsage: `among:excluderole <role mention>...`")
-            # TODO: message.content can be ""
-            elif message.content.isdigit() or (message.content[0] == "-" and message.content[1:].isdigit()):
+            elif message.content.isdigit() or (message.content and message.content[0] == "-" and message.content[1:].isdigit()):
                 index = abs(int(message.content)) - 1
                 if index in range(len(self.tracked_members)):
                     await message.delete()
