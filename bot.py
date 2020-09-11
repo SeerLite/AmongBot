@@ -3,7 +3,6 @@ import sys
 import asyncio
 import json
 import discord
-from enum import Enum
 
 if not (TOKEN := os.getenv("DISCORD_TOKEN")):
     try:
