@@ -298,7 +298,6 @@ class BotPresence:
             f"**Tracked users:**\n"
         )
         for tracked_member in self.tracked_members:
-            # TODO: make this line shorter
             control_panel_text += (f"`{' --' if not tracked_member.is_in_vc else str(self.tracked_members.index(tracked_member) + 1).rjust(3)}. "
                                    f"{tracked_member.member.display_name.ljust(max(len(tracked_member.member.display_name) for tracked_member in self.tracked_members))} "
                                    f"{ ('(' + tracked_member.state + ')').rjust(9)}` "
