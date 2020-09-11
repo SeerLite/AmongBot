@@ -11,14 +11,9 @@ maybe DO remember members and their states?
 
 control panel:
     format:
-        move (STATE) to after display_name
-        show all "unlisted" and "gone but muted so listed" with a different left-padding? or show them at the bottom?
-    fuzzy username killing/ignoring
-    multiple numbers (space-separated) in same message
-
-issues:
-    ignored members can cause problems when unmuting
-    unignoring -> sets to muted if muted before?
+        show gone but left users with a different format
+    mention username killing/ignoring
+    allow multiple numbers (space-separated) in same message
 
 untrack/unmute tracked people everytime a new vc is set # does this already happen?
     new method reset()?
