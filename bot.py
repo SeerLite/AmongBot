@@ -268,15 +268,13 @@ class BotPresence:
         if self.control_panel is None:
             return
         control_panel_text = (
-            f"**Muting:** {'Yes' if self.muting else 'No'}\n"
+            f"**Muting:** `{'Yes' if self.muting else 'No'}`\n"
             f"**Tracked users:**\n"
-            "```\n"
         )
         for tracked_member in self.tracked_members:
             if tracked_member.list:
                 # TODO: make this line shorter
-                control_panel_text += f"{self.tracked_members.index(tracked_member) + 1}. {'(IGNORED)' if tracked_member.ignore else ' (DEAD)  ' if tracked_member.dead else ' (MUTED) ' if tracked_member.mute else ' (ALIVE) '} {tracked_member.member.display_name.ljust(max((len(tracked_member.member.display_name) for tracked_member in self.tracked_members)))} | {tracked_member.member.name}#{tracked_member.member.discriminator}\n"
-        control_panel_text += "```"
+                control_panel_text += f"`{str(self.tracked_members.index(tracked_member) + 1).rjust(3)}. {tracked_member.member.display_name.ljust(max(len(tracked_member.member.display_name) for tracked_member in self.tracked_members))} {'(IGNORED)' if tracked_member.ignore else '   (DEAD)' if tracked_member.dead else '  (MUTED)' if tracked_member.mute else '  (ALIVE)'}` {tracked_member.member.mention} \n"
         if self.mimic:
             control_panel_text += f"**Mimicking:** {self.mimic.mention}"
         else:
