@@ -29,10 +29,9 @@ class SameValueError(Error):
 
 
 class TrackedMember:
-    def __init__(self, member, presence, *, list=True, dead=False, mute=False, ignore=False):
+    def __init__(self, member, presence, *, dead=False, mute=False, ignore=False):
         self.member = member
         self.presence = presence
-        self.list = list
         self.dead = dead
         self._mute = mute
         self.ignore = ignore
@@ -42,7 +41,7 @@ class TrackedMember:
     def mute(self):
         return self._mute
 
-    async def set_mute(self, mute_state, *, only_listed=True):
+    async def set_mute(self, mute_state):
         async with self.mute_lock:
             if not self.ignore and self.member.voice and self.member.voice.channel == self.presence.voice_channel:
                 if self.dead:
@@ -134,10 +133,10 @@ class BotPresence:
     def muting(self):
         return self._muting
 
-    async def set_muting(self, mute_state, *, only_listed=True):
+    async def set_muting(self, mute_state):
         async with self.muting_lock:
             self._muting = mute_state
-            await asyncio.gather(*(tracked_member.set_mute(mute_state, only_listed=only_listed) for tracked_member in self.tracked_members))
+            await asyncio.gather(*(tracked_member.set_mute(mute_state) for tracked_member in self.tracked_members))
 
     def save(self):
         if not str(self.guild.id) in save_data:
@@ -158,7 +157,7 @@ class BotPresence:
                 json.dump(save_data, save_file)
 
     async def track_current_voice(self):
-        await self.set_muting(False, only_listed=False)
+        await self.set_muting(False)
         self.tracked_members = [TrackedMember(member, self, ignore=True if member.voice.mute != self.muting else False) for member in self.voice_channel.members if not any((role in self.excluded_roles for role in member.roles))]
 
     # TODO: maybe it's a good idea to use ext.commands instead of manually doing the stuff
@@ -314,21 +313,10 @@ class BotPresence:
             if after.channel == self.voice_channel:
                 if member not in (tracked_member.member for tracked_member in self.tracked_members):
                     self.tracked_members.append(TrackedMember(member, self, ignore=True if member.voice.mute != self.muting else False))  # ignore new members that don't match current mute state
-                    await self.update_control_panel()
-                else:
-                    for tracked_member in self.tracked_members:
-                        if member == tracked_member.member and not tracked_member.list:
-                            tracked_member.list = True
-                            await self.update_control_panel()
+                await self.update_control_panel()
             elif after.channel != self.voice_channel:
-                # stop listing tracked_members who leave (but don't stop tracking them unless there's no more tracked members!)
-                for tracked_member in self.tracked_members:
-                    if member == tracked_member.member and tracked_member.list and (not tracked_member.mute or tracked_member.ignore):
-                        tracked_member.list = False
-                        break
-
-                if not any((tracked_member.list for tracked_member in self.tracked_members)):  # reset indexes when all managed members leave
-                    await self.set_muting(False, only_listed=False)
+                if not any((tracked_member.member.voice and tracked_member.member.voice.channel == self.voice_channel for tracked_member in self.tracked_members)):  # reset indexes when all managed members leave
+                    await self.set_muting(False)
                     self.tracked_members = []
                 await self.update_control_panel()
 
