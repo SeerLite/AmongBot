@@ -2,6 +2,8 @@ TODOs in code
 
 use setters and getters instead of properties: https://stackoverflow.com/questions/48778945/by-design-should-a-property-getter-ever-throw-an-exception-in-python
 
+have a delay of 1 second before acting upon any mute-all requests. maybe there's one async primitive that works exactly for this? condition? not sure
+
 make ControlPanel class? (everything is an object??)
 
 make the bot work on dedicated servers with multiple channels:
