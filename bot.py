@@ -44,7 +44,7 @@ class TrackedMember:
 
     async def set_mute(self, mute_state, *, only_listed=True):
         async with self.mute_lock:
-            if not self.ignore and (self.list or not only_listed) and self.member.voice and self.member.voice.channel == self.presence.voice_channel:
+            if not self.ignore and self.member.voice and self.member.voice.channel == self.presence.voice_channel:
                 if self.dead:
                     self._mute = True
                 else:
@@ -273,9 +273,8 @@ class BotPresence:
             f"**Tracked users:**\n"
         )
         for tracked_member in self.tracked_members:
-            if tracked_member.list:
-                # TODO: make this line shorter
-                control_panel_text += f"`{str(self.tracked_members.index(tracked_member) + 1).rjust(3)}. {tracked_member.member.display_name.ljust(max(len(tracked_member.member.display_name) for tracked_member in self.tracked_members))} {'(IGNORED)' if tracked_member.ignore else '   (DEAD)' if tracked_member.dead else '  (MUTED)' if tracked_member.mute else '  (ALIVE)'}` {tracked_member.member.mention} \n"
+            # TODO: make this line shorter
+            control_panel_text += f"`{' --' if not tracked_member.member.voice or tracked_member.member.voice.channel != self.voice_channel else str(self.tracked_members.index(tracked_member) + 1).rjust(3)}. {tracked_member.member.display_name.ljust(max(len(tracked_member.member.display_name) for tracked_member in self.tracked_members))} {'(IGNORED)' if tracked_member.ignore else '   (DEAD)' if tracked_member.dead else '  (MUTED)' if tracked_member.mute else '   (LEFT)' if not tracked_member.member.voice or tracked_member.member.voice.channel != self.voice_channel else '  (ALIVE)'}` {tracked_member.member.mention} \n"
         if self.mimic:
             control_panel_text += f"**Mimicking:** {self.mimic.mention}. Quickly deafen and undeafen yourself to toggle global mute."
         else:
