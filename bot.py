@@ -293,11 +293,7 @@ class BotPresence:
             self.mimic = None
 
     async def on_voice_state_update(self, member, before, after):
-        if member.guild != self.guild:
-            return
-        if self.voice_channel is None:
-            return
-        if any((role in self.excluded_roles for role in member.roles)):
+        if member.guild != self.guild or self.voice_channel is None or any((role in self.excluded_roles for role in member.roles)):
             return
         if member == self.mimic:
             if after.channel == self.voice_channel:  # Status changed inside channel
@@ -330,9 +326,7 @@ class BotPresence:
                 await self.update_control_panel()
 
     async def on_reaction_add(self, emoji, message_id, member):
-        if member.guild != self.guild:
-            return
-        if self.control_panel is None:
+        if member.guild != self.guild or self.control_panel is None:
             return
         if message_id == self.control_panel.id:  # TODO: why doesn't this work without .id?
             if emoji.name == '🔈':
