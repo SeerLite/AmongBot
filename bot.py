@@ -73,6 +73,7 @@ class BotPresence:
         self._excluded_roles = frozenset(self.guild.get_role(int(id)) for id in excluded_roles_ids)  # frozen cause we're only assigning anyway
         self._muting = False
         self.muting_lock = asyncio.Lock()
+        self.mimic_undeafen_event = asyncio.Event()
         self.mimic = None
         self.tracked_members = []
 
@@ -276,7 +277,7 @@ class BotPresence:
                 # TODO: make this line shorter
                 control_panel_text += f"`{str(self.tracked_members.index(tracked_member) + 1).rjust(3)}. {tracked_member.member.display_name.ljust(max(len(tracked_member.member.display_name) for tracked_member in self.tracked_members))} {'(IGNORED)' if tracked_member.ignore else '   (DEAD)' if tracked_member.dead else '  (MUTED)' if tracked_member.mute else '  (ALIVE)'}` {tracked_member.member.mention} \n"
         if self.mimic:
-            control_panel_text += f"**Mimicking:** {self.mimic.mention}"
+            control_panel_text += f"**Mimicking:** {self.mimic.mention}. Quickly deafen and undeafen yourself to toggle global mute."
         else:
             control_panel_text += "Not mimicking! React with :copyright: to mimic you!"
         await self.control_panel.edit(content=control_panel_text)
@@ -297,9 +298,16 @@ class BotPresence:
             return
         if member == self.mimic:
             if after.channel == self.voice_channel:  # Status changed inside channel
-                if before.self_deaf != after.self_deaf:
-                    await self.set_muting(after.self_deaf)
-                    await self.update_control_panel()
+                if not before.self_deaf and after.self_deaf:    # Deafened
+                    try:
+                        await asyncio.wait_for(self.mimic_undeafen_event.wait(), 1)
+                        await self.set_muting(not self.muting)
+                        await self.update_control_panel()
+                    except asyncio.TimeoutError:
+                        pass
+                elif before.self_deaf and not after.self_deaf:  # Undeafened
+                    self.mimic_undeafen_event.set()
+                    self.mimic_undeafen_event.clear()
             else:                                    # Whoops, not in channel anymore?
                 await self.set_mimic(None)
                 await self.update_control_panel()
