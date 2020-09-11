@@ -346,8 +346,6 @@ class BotPresence:
                     tracked_member.dead = False
                 await self.set_muting(False)
                 await self.update_control_panel()
-            else:
-                print(repr(emoji))
             # TODO: fetch_message() exception handling (idk if it matters in here tho)
             message = await self.text_channel.fetch_message(message_id)
             await message.remove_reaction(emoji, member)
