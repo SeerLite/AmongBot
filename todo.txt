@@ -2,6 +2,17 @@ TODOs in code
 
 use setters and getters instead of properties: https://stackoverflow.com/questions/48778945/by-design-should-a-property-getter-ever-throw-an-exception-in-python
 
+open source:
+    write README:
+        in usage instructions:
+            1. create channel for bot
+            2. invite bot
+            this to avoid people setting the bot in a general chat channel
+    document all documentable things with docstrings or whatever they're called
+    add license:
+        agpl or bsd?
+        maybe i should be normal and just use mit
+
 have a delay of 1 second before acting upon any mute-all requests. maybe there's one async primitive that works exactly for this? condition? not sure
 
 make ControlPanel class? (everything is an object??)
@@ -44,14 +55,7 @@ reaction: admin-takeover
     only act when admin reacts/sends commands
     needs a prepared admin role set up with among:admin_role (actually maybe the API provides a way to see if the user is admin)
 
-on release:
-    document all documentable things with docstrings or whatever they're called
-    add agplv3 license
-    add a way to get to the source code (through a command? through among:help?)
-    in usage instructions:
-        1. create channel for bot
-        2. invite bot
-        this to avoid people setting the bot in a general chat channel
+add a way to get to the source code (through a command? through among:help?)
 
 low priority:
     on startup clear all invalid reactions on old control panel
