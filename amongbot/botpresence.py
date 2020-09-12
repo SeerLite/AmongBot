@@ -1,7 +1,7 @@
 import asyncio
 import json
-from .trackedmember import TrackedMember
 
+from .trackedmember import TrackedMember
 from .errors import SameValueError
 
 
