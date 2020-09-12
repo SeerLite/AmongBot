@@ -14,6 +14,7 @@ class Client(discord.Client):
         print(f"{self.user.name} is online!")
         for guild in self.guilds:
             if str(guild.id) in self.save_data:
+                # TODO: is the stuff below pythonic? (appending and instantiating at the same time)
                 self.presences.append(await BotPresence.create(
                     guild,
                     self,

@@ -8,10 +8,9 @@ open source:
             1. create channel for bot
             2. invite bot
             this to avoid people setting the bot in a general chat channel
+        link that alternative project i found that's probably a lot better than this one
     document all documentable things with docstrings or whatever they're called
-    add license:
-        agpl or bsd?
-        maybe i should be normal and just use mit
+    add agpl license
 
 have a delay of 1 second before acting upon any mute-all requests. maybe there's one async primitive that works exactly for this? condition? not sure
 
