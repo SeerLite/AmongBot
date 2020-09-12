@@ -4,11 +4,11 @@ from .botpresence import BotPresence
 
 
 class Client(discord.Client):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, presences=[], save_data={}, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.save_data = None
-        self.presences = []
+        self.presences = presences
+        self.save_data = save_data
 
     async def on_ready(self):
         print(f"{self.user.name} is online!")

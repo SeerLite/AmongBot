@@ -13,11 +13,12 @@ if not (TOKEN := os.getenv("DISCORD_TOKEN")):
         print("No .token file found! Please create it or pass it through DISCORD_TOKEN environment variable.")
         sys.exit(1)
 
-client = Client()
 
 try:
     with open("data.json") as save_file:
-        client.save_data = json.load(save_file)
+        save_data = json.load(save_file)
+        client = Client(save_data=save_data)
 except FileNotFoundError:
-    client.save_data = {}
+    client = Client()
+
 client.run(TOKEN)
