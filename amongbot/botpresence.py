@@ -1,89 +1,17 @@
-import os
-import sys
 import asyncio
 import json
-import discord
+from .trackedmember import TrackedMember
 
-if not (TOKEN := os.getenv("DISCORD_TOKEN")):
-    try:
-        with open(".token") as token_file:
-            TOKEN = token_file.read()
-    except FileNotFoundError:
-        print("No .token file found! Please create it or pass it through DISCORD_TOKEN environment variable.")
-        sys.exit(1)
-
-client = discord.Client()
-
-
-class Error(Exception):
-    """Base class for exceptions in amongbot"""
-    pass
-
-
-class SameValueError(Error):
-    def __init__(self, value=None):
-        self.value = value
-
-    def __str__(self):
-        return self.value
-
-
-class TrackedMemberState(Enum):
-    ALIVE, MUTED, DEAD, AWAY, IGNORED = range(5)
-
-
-class TrackedMember:
-    def __init__(self, member, presence, *, dead=False, mute=False, ignore=False):
-        self.member = member
-        self.presence = presence
-        self.dead = dead
-        self._mute = mute
-        self.ignore = ignore
-        self.mute_lock = asyncio.Lock()
-
-    @property
-    def mute(self):
-        return self._mute
-
-    async def set_mute(self, mute_state):
-        async with self.mute_lock:
-            if not self.ignore and self.is_in_vc:
-                if self.dead:
-                    self._mute = True
-                else:
-                    self._mute = mute_state
-                if self.member.voice.mute != self._mute:
-                    await self.member.edit(mute=self._mute)
-
-    @property
-    def state(self):
-        if self.is_in_vc:
-            if self.ignore:
-                return "IGNORED"
-            elif self.dead:
-                return "DEAD"
-            elif self.mute:
-                return "MUTED"
-            else:
-                return "ALIVE"
-        else:
-            return "AWAY"
-
-    @property
-    def is_in_vc(self):
-        if self.member.voice and self.member.voice.channel == self.presence.voice_channel:
-            return True
-        else:
-            return False
-
+from .errors import SameValueError
 
 
 class BotPresence:
     @classmethod
-    async def create(cls, guild, *, text_channel_id=None, voice_channel_id=None, control_panel_id=None, excluded_roles_ids=[]):
+    async def create(cls, guild, client, *, text_channel_id=None, voice_channel_id=None, control_panel_id=None, excluded_roles_ids=[]):
         self = BotPresence()
 
         self.guild = guild
+        self.client = client
         self._text_channel = None
         self._voice_channel = None
         self.control_panel = None
@@ -165,22 +93,22 @@ class BotPresence:
             await asyncio.gather(*(tracked_member.set_mute(mute_state) for tracked_member in self.tracked_members))
 
     def save(self):
-        if not str(self.guild.id) in save_data:
-            save_data[str(self.guild.id)] = {}
+        if not str(self.guild.id) in self.client.save_data:
+            self.client.save_data[str(self.guild.id)] = {}
         for name, value in (("text", self.text_channel), ("voice", self.voice_channel), ("control", self.control_panel)):
             if value:
-                save_data[str(self.guild.id)][name] = value.id
+                self.client.save_data[str(self.guild.id)][name] = value.id
             else:
-                save_data[str(self.guild.id)][name] = None
+                self.client.save_data[str(self.guild.id)][name] = None
 
-        save_data[str(self.guild.id)]["exclude"] = [role.id for role in self.excluded_roles]
+        self.client.save_data[str(self.guild.id)]["exclude"] = [role.id for role in self.excluded_roles]
 
         try:
             with open("data.json", "w") as save_file:
-                json.dump(save_data, save_file)
+                json.dump(self.client.save_data, save_file)
         except FileNotFoundError:
             with open("data.json", "x") as save_file:
-                json.dump(save_data, save_file)
+                json.dump(self.client.save_data, save_file)
 
     async def track_current_voice(self):
         await self.set_muting(False)
@@ -208,7 +136,7 @@ class BotPresence:
                             await self.send_control_panel()
                         except SameValueError as error:
                             if error.args[0] == message.author.voice.channel:
-                                await self.text_channel.send(f"Already set up! This is {client.user.display_name}'s channel and currently tracking {self.voice_channel.name}.")
+                                await self.text_channel.send(f"Already set up! This is {self.client.user.display_name}'s channel and currently tracking {self.voice_channel.name}.")
                     elif error.args[0] == message.author.voice.channel:
                         await self.text_channel.send(f"All good! Listening for commands only on {self.text_channel.mention} and tracking {self.voice_channel.name}.")
                         await self.send_control_panel()
@@ -217,12 +145,12 @@ class BotPresence:
         elif message.content == "among:text":
             try:
                 self.text_channel = message.channel
-                await self.text_channel.send(f"Current channel {self.text_channel.mention} set as {client.user.name}'s channel!\n"
+                await self.text_channel.send(f"Current channel {self.text_channel.mention} set as {self.client.user.name}'s channel!\n"
                                              f"Now accepting commands here.")
                 if self.voice_channel:
                     await self.send_control_panel()
             except SameValueError:
-                await self.text_channel.send(f"Error! This channel is already {client.user.name}'s channel.")
+                await self.text_channel.send(f"Error! This channel is already {self.client.user.name}'s channel.")
         elif message.channel == self.text_channel:
             if message.content == "among:vc":
                 try:
@@ -370,66 +298,3 @@ class BotPresence:
             # TODO: fetch_message() exception handling (idk if it matters in here tho)
             message = await self.text_channel.fetch_message(message_id)
             await message.remove_reaction(emoji, member)
-
-
-@client.event
-async def on_ready():
-    print("Bot is online.")
-    client.presences = []
-    for guild in client.guilds:
-        if str(guild.id) in save_data:
-            client.presences.append(await BotPresence.create(
-                guild,
-                text_channel_id=save_data[str(guild.id)]["text"],
-                voice_channel_id=save_data[str(guild.id)]["voice"],
-                control_panel_id=save_data[str(guild.id)]["control"],
-                excluded_roles_ids=save_data[str(guild.id)]["exclude"],
-            ))
-        else:
-            client.presences.append(await BotPresence.create(
-                guild
-            ))
-
-
-@client.event
-async def on_guild_join(guild):
-    client.presences.append(await BotPresence.create(
-        guild
-    ))
-
-
-@client.event
-async def on_guild_remove(guild):
-    client.presences = [presence for presence in client.presences if presence.guild != guild]
-
-
-@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
-    for presence in client.presences:
-        await presence.on_message(message)  # NOTE: will receive messages from all guilds
-
-
-@client.event
-async def on_voice_state_update(member, before, after):
-    if member == client.user:
-        return
-    for presence in client.presences:
-        await presence.on_voice_state_update(member, before, after)  # NOTE: will receive updates from all guilds
-
-
-@client.event
-async def on_raw_reaction_add(payload):
-    if payload.member == client.user:
-        return
-    for presence in client.presences:
-        await presence.on_reaction_add(payload.emoji, payload.message_id, payload.member)  # NOTE: will receive reactions from all guilds
-
-if __name__ == '__main__':
-    try:
-        with open("data.json") as save_file:
-            save_data = json.load(save_file)
-    except FileNotFoundError:
-        save_data = {}
-    client.run(TOKEN)
