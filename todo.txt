@@ -1,6 +1,9 @@
 TODOs in code
 
-use setters and getters instead of properties: https://stackoverflow.com/questions/48778945/by-design-should-a-property-getter-ever-throw-an-exception-in-python
+#use setters and getters instead of properties: https://stackoverflow.com/questions/48778945/by-design-should-a-property-getter-ever-throw-an-exception-in-python
+nevermind, that's for _getters_ and my exceptions are in _setters_
+
+async save to file
 
 open source:
     write README:
