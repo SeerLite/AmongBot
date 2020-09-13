@@ -1,10 +1,5 @@
 TODOs in code
 
-#use setters and getters instead of properties: https://stackoverflow.com/questions/48778945/by-design-should-a-property-getter-ever-throw-an-exception-in-python
-nevermind, that's for _getters_ and my exceptions are in _setters_
-
-async save to file
-
 open source:
     write README:
         in usage instructions:
@@ -13,7 +8,6 @@ open source:
             this to avoid people setting the bot in a general chat channel
         link that alternative project i found that's probably a lot better than this one
     document all documentable things with docstrings or whatever they're called
-    add agpl license
 
 have a delay of 1 second before acting upon any mute-all requests. maybe there's one async primitive that works exactly for this? condition? not sure
 
