@@ -1,3 +1,4 @@
+import asyncio
 import discord
 
 from .botpresence import BotPresence
@@ -9,7 +10,9 @@ class Client(discord.Client):
 
         self.presences = presences
         self.save_data = save_data
+        self.save_lock = asyncio.Lock()
 
+    # Events
     async def on_ready(self):
         print(f"{self.user.name} is online!")
         for guild in self.guilds:

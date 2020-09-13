@@ -39,7 +39,7 @@ class BotPresence:
         if self.control_panel:
             await self.update_control_panel()
 
-        self.save()
+        await self.save()
         return self
 
     @property
@@ -51,7 +51,7 @@ class BotPresence:
         if self._text_channel == channel:
             raise SameValueError(channel)
         self._text_channel = channel
-        self.save()
+        await self.save()
 
     @property
     def voice_channel(self):
@@ -62,7 +62,7 @@ class BotPresence:
             raise SameValueError(channel)
         # TODO: check for permissions in vc here
         self._voice_channel = channel
-        self.save()
+        await self.save()
 
     @property
     def excluded_roles(self):
@@ -82,7 +82,7 @@ class BotPresence:
                     self.tracked_members.append(TrackedMember(member, self))
             await asyncio.gather(*(tracked_member.set_mute(self.muting) for tracked_member in self.tracked_members if any((role in new_unexcludes for role in tracked_member.member.roles))))
         self._excluded_roles = excluded_roles
-        self.save()
+        await self.save()
 
     @property
     def muting(self):
@@ -93,23 +93,24 @@ class BotPresence:
             self._muting = mute_state
             await asyncio.gather(*(tracked_member.set_mute(mute_state) for tracked_member in self.tracked_members))
 
-    def save(self):
-        if not str(self.guild.id) in self.client.save_data:
-            self.client.save_data[str(self.guild.id)] = {}
-        for name, value in (("text", self.text_channel), ("voice", self.voice_channel), ("control", self.control_panel)):
-            if value:
-                self.client.save_data[str(self.guild.id)][name] = value.id
-            else:
-                self.client.save_data[str(self.guild.id)][name] = None
+    async def save(self):
+        async with self.client.save_lock:
+            if not str(self.guild.id) in self.client.save_data:
+                self.client.save_data[str(self.guild.id)] = {}
 
-        self.client.save_data[str(self.guild.id)]["exclude"] = [role.id for role in self.excluded_roles]
+            for name, value in (("text", self.text_channel), ("voice", self.voice_channel), ("control", self.control_panel)):
+                if value:
+                    self.client.save_data[str(self.guild.id)][name] = value.id
+                else:
+                    self.client.save_data[str(self.guild.id)][name] = None
+            self.client.save_data[str(self.guild.id)]["exclude"] = [role.id for role in self.excluded_roles]
 
-        try:
-            with open("data.json", "w") as save_file:
-                json.dump(self.client.save_data, save_file)
-        except FileNotFoundError:
-            with open("data.json", "x") as save_file:
-                json.dump(self.client.save_data, save_file)
+            try:
+                with open("data.json", "w") as save_file:
+                    json.dump(self.client.save_data, save_file)
+            except FileNotFoundError:
+                with open("data.json", "x") as save_file:
+                    json.dump(self.client.save_data, save_file)
 
     async def track_current_voice(self):
         await self.set_muting(False)
@@ -165,7 +166,7 @@ class BotPresence:
                         if self.control_panel:
                             await self.control_panel.delete()
                             self.control_panel = None
-                            self.save()
+                            await self.save()
                         await self.text_channel.send(f"User {message.author.mention} not in any voice channel on this server. Stopped tracking voice channel.")
                 except SameValueError:
                     if self.voice_channel:
@@ -213,7 +214,7 @@ class BotPresence:
         if self.control_panel:
             await self.control_panel.delete()
         self.control_panel = await self.text_channel.send("```\n```")
-        self.save()
+        await self.save()
         await self.control_panel.add_reaction('🔈')
         await self.control_panel.add_reaction('©')
         await self.control_panel.add_reaction('🔄')
