@@ -16,6 +16,8 @@ add reindex tracked members command:
     reaction should be the one currently for "reset dead", and reset dead should have another emoji
     i should probably re-add .list property to tracked members so we can still track members that have left muted (to unmute them when then join a voice channel) but hide them in the control panel
 
+add unignore all members in vc command + reaction
+
 make ControlPanel class? (everything is an object??)
 
 make the bot work on dedicated servers with multiple channels:

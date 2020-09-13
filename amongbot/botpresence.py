@@ -5,6 +5,7 @@ import timeit
 
 from .trackedmember import TrackedMember
 from .errors import SameValueError
+from .constants import SOURCE_CODE_URL
 
 
 class BotPresence:
@@ -124,7 +125,28 @@ class BotPresence:
     async def on_message(self, message):
         if message.guild != self.guild:
             return
-        if message.content == "among:setup":  # TODO: make this a method?
+        if message.content == "among:help":
+            response = ("**Quick start**\n"
+                        "```markdown\n"
+                        f"1. Create a dedicated text channel for {self.client.user.name}.\n"
+                        "2. Join the voice channel you want to track.\n"
+                        "3. Type among:setup in the dedicated text channel.\n"
+                        "```\n"
+                        "**Global commands**\n"
+                        "```yaml\n"
+                        "among:help : Sends this help text.\n"
+                        "among:setup : Runs among:text and among:vc\n"
+                        "among:text : Sets the current channel as the dedicated text channel.\n"
+                        "```\n"
+                        "**Commands for dedicated text channel**\n"
+                        "```yaml\n"
+                        "among:vc : Sets the current voice channel as the tracked channel.\n"
+                        "among:excluderole : Exclude mentioned roles from muting.\n"
+                        "among:unexcluderole  : Stop excluding mentioned roles.\n"
+                        "```\n"
+                        f"This bot is Free Software. Get the source code from here: {SOURCE_CODE_URL}\n")
+            await message.channel.send(response)
+        elif message.content == "among:setup":  # TODO: make this a method?
             # TODO: DRY this
             if message.author.voice:
                 try:
@@ -142,7 +164,7 @@ class BotPresence:
                             await self.send_control_panel()
                         except SameValueError as error:
                             if error.args[0] == message.author.voice.channel:
-                                await self.text_channel.send(f"Already set up! This is {self.client.user.display_name}'s channel and currently tracking {self.voice_channel.name}.")
+                                await self.text_channel.send(f"Already set up! This is {self.client.user.name}'s channel and currently tracking {self.voice_channel.name}.")
                     elif error.args[0] == message.author.voice.channel:
                         await self.text_channel.send(f"All good! Listening for commands only on {self.text_channel.mention} and tracking {self.voice_channel.name}.")
                         await self.send_control_panel()
@@ -217,7 +239,7 @@ class BotPresence:
     async def send_control_panel(self):
         if self.control_panel:
             await self.control_panel.delete()
-        self.control_panel = await self.text_channel.send("```\n```")
+        self.control_panel = await self.text_channel.send("Loading...")
         await self.save()
         await self.control_panel.add_reaction('🔈')
         await self.control_panel.add_reaction('©')
@@ -237,9 +259,11 @@ class BotPresence:
                                    f"{ ('(' + tracked_member.state + ')').rjust(9)}` "
                                    f"{tracked_member.member.mention}\n")
         if self.mimic:
-            control_panel_text += f"**Mimicking:** {self.mimic.mention}. Quickly deafen and undeafen yourself to toggle global mute."
+            control_panel_text += f"**Mimicking:** {self.mimic.mention}. Quickly deafen and undeafen yourself to toggle global mute.\n"
         else:
-            control_panel_text += "Not mimicking! React with :copyright: to mimic you!"
+            control_panel_text += "Not mimicking! React with :copyright: to mimic you!\n"
+        control_panel_text += ("Send the index of a member to set them as dead/alive (e.g `1`). React with :arrows_counterclockwise: to reset dead members.\n"
+                               "Send the index of a member with a dash prepended to ignore/unignore them (e.g `-1`). New members are ignored by default.")
         await self.control_panel.edit(content=control_panel_text)
 
     async def set_mimic(self, member):  # TODO: use TrackedMember instead of Member
