@@ -1,6 +1,7 @@
 import asyncio
 import json
 import discord
+import timeit
 
 from .trackedmember import TrackedMember
 from .errors import SameValueError
@@ -29,7 +30,9 @@ class BotPresence:
         self._excluded_roles = frozenset(self.guild.get_role(int(id)) for id in excluded_roles_ids)  # frozen cause we're only assigning anyway
         self._muting = False
         self.muting_lock = asyncio.Lock()
-        self.mimic_undeafen_event = asyncio.Event()
+        self.mimic_undeafen_event = asyncio.Event()  # Used to detect if mimicked user was muted and unmuted in same second
+        self.mute_delay = 5  # TODO: Make this scale with the amount of members in the voice channel (0.5s for each member)
+        self.last_mute_time = timeit.default_timer() - self.mute_delay
         self.mimic = None
         self.tracked_members = []
 
@@ -88,6 +91,7 @@ class BotPresence:
     def muting(self):
         return self._muting
 
+    # TODO: rename this method to mute_all or something?
     async def set_muting(self, mute_state):
         async with self.muting_lock:
             self._muting = mute_state
@@ -243,7 +247,7 @@ class BotPresence:
             if member.voice and member.voice.channel == self.voice_channel:  # TODO: and make this use is_in_vc
                 self.mimic = member
                 await self.set_muting(self.muting)  # TODO: maybe set_muting() with no args should default to current mute (or maybe set_muting shouldn't do all it does? (or maybe it should be renamed??))
-                return True
+                return True  # Remove return values and use exceptions?
             else:
                 return False
         else:
@@ -256,9 +260,11 @@ class BotPresence:
             if after.channel == self.voice_channel:  # Status changed inside channel
                 if not before.self_deaf and after.self_deaf:    # Deafened
                     try:
-                        await asyncio.wait_for(self.mimic_undeafen_event.wait(), 1)
-                        await self.set_muting(not self.muting)
-                        await self.update_control_panel()
+                        await asyncio.wait_for(self.mimic_undeafen_event.wait(), 1)  # Only mute if mimic undeafened in same second
+                        if (timeit.default_timer() - self.last_mute_time) > self.mute_delay:
+                            await self.set_muting(not self.muting)
+                            await self.update_control_panel()
+                            self.last_mute_time = timeit.default_timer()
                     except asyncio.TimeoutError:
                         pass
                 elif before.self_deaf and not after.self_deaf:  # Undeafened
@@ -283,8 +289,10 @@ class BotPresence:
             return
         if message_id == self.control_panel.id:  # TODO: why doesn't this work without .id?
             if emoji.name == '🔈':
-                await self.set_muting(not self.muting)
-                await self.update_control_panel()
+                if (timeit.default_timer() - self.last_mute_time) > self.mute_delay:  # TODO move this into set_muting() but don't call set_muting() from places a user wouldn't
+                    await self.set_muting(not self.muting)
+                    await self.update_control_panel()
+                    self.last_mute_time = timeit.default_timer()
             elif emoji.name == '©':
                 if self.mimic is None:
                     await self.set_mimic(member)
