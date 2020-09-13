@@ -46,8 +46,7 @@ class BotPresence:
     def text_channel(self):
         return self._text_channel
 
-    @text_channel.setter
-    def text_channel(self, channel):
+    async def set_text_channel(self, channel):
         # TODO: check for permissions in channel here. message user personally if can't send to channel
         if self._text_channel == channel:
             raise SameValueError(channel)
@@ -58,8 +57,7 @@ class BotPresence:
     def voice_channel(self):
         return self._voice_channel
 
-    @voice_channel.setter
-    def voice_channel(self, channel):
+    async def set_voice_channel(self, channel):
         if self._voice_channel == channel:
             raise SameValueError(channel)
         # TODO: check for permissions in vc here
@@ -125,15 +123,15 @@ class BotPresence:
             # TODO: DRY this
             if message.author.voice:
                 try:
-                    self.text_channel = message.channel
-                    self.voice_channel = message.author.voice.channel
+                    await self.set_text_channel(message.channel)
+                    await self.set_voice_channel(message.author.voice.channel)
                     await self.track_current_voice()
                     await self.text_channel.send(f"All good! Listening for commands only on {self.text_channel.mention} and tracking {self.voice_channel.name}.")
                     await self.send_control_panel()
                 except SameValueError as error:
                     if error.args[0] == message.channel:
                         try:
-                            self.voice_channel = message.author.voice.channel
+                            await self.set_voice_channel(message.author.voice.channel)
                             await self.track_current_voice()
                             await self.text_channel.send(f"All good! Listening for commands only on {self.text_channel.mention} and tracking {self.voice_channel.name}.")
                             await self.send_control_panel()
@@ -147,7 +145,7 @@ class BotPresence:
                 await message.channel.send(f"Error! User {message.author.mention} not in any voice channel on this server! Please join a voice channel first!")
         elif message.content == "among:text":
             try:
-                self.text_channel = message.channel
+                await self.set_text_channel(message.channel)
                 await self.text_channel.send(f"Current channel {self.text_channel.mention} set as {self.client.user.name}'s channel!\n"
                                              f"Now accepting commands here.")
                 if self.voice_channel:
@@ -158,12 +156,12 @@ class BotPresence:
             if message.content == "among:vc":
                 try:
                     if message.author.voice:
-                        self.voice_channel = message.author.voice.channel
+                        await self.set_voice_channel(message.author.voice.channel)
                         await self.track_current_voice()
                         await self.text_channel.send(f"{self.voice_channel.name} set as tracked voice channel!")
                         await self.send_control_panel()
                     else:
-                        self.voice_channel = None
+                        await self.set_voice_channel(None)
                         if self.control_panel:
                             await self.control_panel.delete()
                             self.control_panel = None
