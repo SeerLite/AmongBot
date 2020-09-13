@@ -116,7 +116,7 @@ class BotPresence:
         await self.set_muting(False)
         self.tracked_members = [TrackedMember(member, self, ignore=True if member.voice.mute != self.muting else False) for member in self.voice_channel.members if not any((role in self.excluded_roles for role in member.roles))]
 
-    # TODO: maybe it's a good idea to use ext.commands instead of manually doing the stuff
+    # TODO: maybe it's a good idea to use ext.commands instead of manually doing this stuff
     async def on_message(self, message):
         if message.guild != self.guild:
             return
