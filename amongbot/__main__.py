@@ -20,5 +20,10 @@ try:
         client = Client(save_data=save_data)
 except FileNotFoundError:
     client = Client()
+except json.JSONDecodeError:
+    if os.stat("data.json").st_size == 0:
+        client = Client()
+    else:
+        raise
 
 client.run(TOKEN)
