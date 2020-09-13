@@ -1,5 +1,6 @@
 import asyncio
 import json
+import discord
 
 from .trackedmember import TrackedMember
 from .errors import SameValueError
@@ -21,8 +22,10 @@ class BotPresence:
         if voice_channel_id:
             self._voice_channel = self.guild.get_channel(int(voice_channel_id))
         if control_panel_id:
-            # TODO: fetch_message() can raise exceptions, handle them
-            self.control_panel = await self.text_channel.fetch_message(int(control_panel_id))
+            try:
+                self.control_panel = await self.text_channel.fetch_message(int(control_panel_id))
+            except discord.HTTPException:
+                pass
         self._excluded_roles = frozenset(self.guild.get_role(int(id)) for id in excluded_roles_ids)  # frozen cause we're only assigning anyway
         self._muting = False
         self.muting_lock = asyncio.Lock()
