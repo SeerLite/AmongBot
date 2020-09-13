@@ -11,6 +11,8 @@ open source:
 
 have a delay of 1 second before acting upon any mute-all requests. maybe there's one async primitive that works exactly for this? condition? not sure
 
+OCR scan screen????? https://github.com/denverquane/amongusdiscord
+
 add reindex tracked members command:
     resets the tracked members indexes in control panel
     reaction should be the one currently for "reset dead", and reset dead should have another emoji
