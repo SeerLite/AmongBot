@@ -1,13 +1,11 @@
+This file is for my own quick note-taking. Don't expect it to be organized or even make sense at times.
+
 TODOs in code
 
 open source:
-    write README:
-        in usage instructions:
-            1. create channel for bot
-            2. invite bot
-            this to avoid people setting the bot in a general chat channel
-        link to https://github.com/denverquane/amongusdiscord and https://github.com/denverquane/amongusdiscord
     document all documentable things with docstrings or whatever they're called
+    link to more similar bots in readme
+    mirror to github
 
 OCR scan screen
 
@@ -18,7 +16,7 @@ add reindex tracked members command:
 
 add unignore all members in vc command + reaction
 
-make ControlPanel class? (everything is an object??)
+make ControlPanel a class? (everything is an object??)
 
 make the bot work on dedicated servers with multiple channels:
     multiple self.text_channels and bound voice_channels
@@ -41,9 +39,6 @@ once tracked, only mute inside of channel and unmute elsewhere # tis gon be real
 setting up:
     append command output/responses to the top of control_panel (chronological still lol) instead of responding. also, delete command messages
     maybe resend the control panel after every message or something idk make the control panel stay at the bottom ughgh
-
-support mutliple guilds:
-    among:help
 
 commands for all reactions (maybe not):
     among:mute/among:unmute and the like
