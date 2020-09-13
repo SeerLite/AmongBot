@@ -6,12 +6,10 @@ open source:
             1. create channel for bot
             2. invite bot
             this to avoid people setting the bot in a general chat channel
-        link that alternative project i found that's probably a lot better than this one
+        link to https://github.com/denverquane/amongusdiscord and https://github.com/denverquane/amongusdiscord
     document all documentable things with docstrings or whatever they're called
 
-have a delay of 1 second before acting upon any mute-all requests. maybe there's one async primitive that works exactly for this? condition? not sure
-
-OCR scan screen????? https://github.com/denverquane/amongusdiscord
+OCR scan screen
 
 add reindex tracked members command:
     resets the tracked members indexes in control panel
