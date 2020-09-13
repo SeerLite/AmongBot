@@ -11,6 +11,11 @@ open source:
 
 have a delay of 1 second before acting upon any mute-all requests. maybe there's one async primitive that works exactly for this? condition? not sure
 
+add reindex tracked members command:
+    resets the tracked members indexes in control panel
+    reaction should be the one currently for "reset dead", and reset dead should have another emoji
+    i should probably re-add .list property to tracked members so we can still track members that have left muted (to unmute them when then join a voice channel) but hide them in the control panel
+
 make ControlPanel class? (everything is an object??)
 
 make the bot work on dedicated servers with multiple channels:
