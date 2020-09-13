@@ -7,7 +7,7 @@ from .client import Client
 # load token from env, fall back to .token file
 if not (TOKEN := os.getenv("DISCORD_TOKEN")):
     try:
-        with open(".token") as token_file:
+        with open("token.txt") as token_file:
             TOKEN = token_file.read()
     except FileNotFoundError:
         print("No .token file found! Please create it or pass it through DISCORD_TOKEN environment variable.")
