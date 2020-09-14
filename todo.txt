@@ -29,8 +29,6 @@ maybe DO remember members and their states?
     so we can still unmute members who left muted
 
 control panel:
-    format:
-        show gone but left users with a different format
     mention username killing/ignoring
     allow multiple numbers (space-separated) in same message
 
@@ -55,7 +53,4 @@ reaction: admin-takeover
     AKA among:takeover
     only act when admin reacts/sends commands
     needs a prepared admin role set up with among:admin_role (actually maybe the API provides a way to see if the user is admin)
-
-low priority:
-    on startup clear all invalid reactions on old control panel
 

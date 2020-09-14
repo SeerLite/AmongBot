@@ -26,6 +26,10 @@ class BotPresence:
         if control_panel_id:
             try:
                 self.control_panel = await self.text_channel.fetch_message(int(control_panel_id))
+                await self.control_panel.clear_reactions()
+                await self.control_panel.add_reaction('🔈')
+                await self.control_panel.add_reaction('©')
+                await self.control_panel.add_reaction('🔄')
             except discord.HTTPException:
                 pass
         self._excluded_roles = frozenset(self.guild.get_role(int(id)) for id in excluded_roles_ids)  # frozen cause we're only assigning anyway
