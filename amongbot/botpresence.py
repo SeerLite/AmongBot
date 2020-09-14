@@ -31,7 +31,8 @@ class BotPresence:
         self._excluded_roles = frozenset(self.guild.get_role(int(id)) for id in excluded_roles_ids)  # frozen cause we're only assigning anyway
         self._muting = False
         self.muting_lock = asyncio.Lock()
-        self.mimic_undeafen_event = asyncio.Event()  # Used to detect if mimicked user was muted and unmuted in same second
+        self.mimic_undeafen_timeout = 1
+        self.mimic_deafen_time = timeit.default_timer() - self.mimic_undeafen_timeout  # Used to detect if mimicked user was muted and unmuted in same second
         self.mute_delay = 5  # TODO: Make this scale with the amount of members in the voice channel (0.5s for each member)
         self.last_mute_time = timeit.default_timer() - self.mute_delay
         self.mimic = None
@@ -283,17 +284,13 @@ class BotPresence:
         if member == self.mimic:
             if after.channel == self.voice_channel:  # Status changed inside channel
                 if not before.self_deaf and after.self_deaf:    # Deafened
-                    try:
-                        await asyncio.wait_for(self.mimic_undeafen_event.wait(), 1)  # Only mute if mimic undeafened in same second
+                    self.mimic_deafen_time = timeit.default_timer()
+                elif before.self_deaf and not after.self_deaf:  # Undeafened
+                    if (timeit.default_timer() - self.mimic_deafen_time) < self.mimic_undeafen_timeout:
                         if (timeit.default_timer() - self.last_mute_time) > self.mute_delay:
                             await self.set_muting(not self.muting)
                             await self.update_control_panel()
                             self.last_mute_time = timeit.default_timer()
-                    except asyncio.TimeoutError:
-                        pass
-                elif before.self_deaf and not after.self_deaf:  # Undeafened
-                    self.mimic_undeafen_event.set()
-                    self.mimic_undeafen_event.clear()
             else:                                    # Whoops, not in channel anymore?
                 await self.set_mimic(None)
                 await self.update_control_panel()
