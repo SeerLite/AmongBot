@@ -11,9 +11,8 @@ class TrackedMember:
     def __init__(self, member, presence, *, dead=False, mute=False, ignore=False):
         self.member = member
         self.presence = presence
-        self.dead = dead
+        self.state = "alive"
         self._mute = mute
-        self.ignore = ignore
         self.mute_lock = asyncio.Lock()
 
     @property
@@ -22,27 +21,13 @@ class TrackedMember:
 
     async def set_mute(self, mute_state):
         async with self.mute_lock:
-            if not self.ignore and self.is_in_vc:
-                if self.dead:
+            if self.state != "ignored" and self.is_in_vc:
+                if self.state == "dead":
                     self._mute = True
                 else:
                     self._mute = mute_state
                 if self.member.voice.mute != self._mute:
                     await self.member.edit(mute=self._mute)
-
-    @property
-    def state(self):
-        if self.is_in_vc:
-            if self.ignore:
-                return "IGNORED"
-            elif self.dead:
-                return "DEAD"
-            elif self.mute:
-                return "MUTED"
-            else:
-                return "ALIVE"
-        else:
-            return "AWAY"
 
     @property
     def is_in_vc(self):
@@ -276,11 +261,16 @@ class BotPresence:
                 for received_index in set(message.content.split(" ")):
                     index = abs(int(received_index)) - 1
                     if index in range(len(self.tracked_members)):
-                        if int(received_index) > 0:
-                            if not self.tracked_members[index].ignore:
-                                self.tracked_members[index].dead = not self.tracked_members[index].dead
-                        else:  # if index is negative, toggle ignore instead of dead
-                            self.tracked_members[index].ignore = not self.tracked_members[index].ignore
+                        if received_index[0] == "-":  # toggle ignored
+                            if self.tracked_members[index].state == "ignored":
+                                self.tracked_members[index].state = "alive"
+                            else:
+                                self.tracked_members[index].state = "ignored"
+                        else:                   # toggle dead
+                            if self.tracked_members[index].state == "alive":
+                                self.tracked_members[index].state = "dead"
+                            elif self.tracked_members[index].state == "dead":
+                                self.tracked_members[index].state = "alive"
                 await self.set_muting(self.muting)
                 await self.update_control_panel()
                 await message.delete()
@@ -306,7 +296,7 @@ class BotPresence:
         for tracked_member in self.tracked_members:
             control_panel_text += (f"`{' --' if not tracked_member.is_in_vc else str(self.tracked_members.index(tracked_member) + 1).rjust(3)}. "
                                    f"{tracked_member.member.display_name.ljust(max(len(tracked_member.member.display_name) for tracked_member in self.tracked_members))} "
-                                   f"{ ('(' + tracked_member.state + ')').rjust(9)}` "
+                                   f"{ ('(' + tracked_member.state.upper() + ')').rjust(9)}` "
                                    f"{tracked_member.member.mention}\n")
         if self.mimic:
             control_panel_text += f"**Mimicking:** {self.mimic.mention}. Quickly deafen and undeafen yourself to toggle global mute.\n"
@@ -361,7 +351,7 @@ class BotPresence:
         if before.mute != after.mute and not muting_in_progress and after.channel == self.voice_channel:
             for tracked_member in self.tracked_members:
                 if member == tracked_member.member:
-                    tracked_member.ignore = True
+                    tracked_member.state = "ignored"
                     await self.update_control_panel()
                     break
 
@@ -383,7 +373,8 @@ class BotPresence:
                     await self.update_control_panel()
             elif emoji.name == '🔄':
                 for tracked_member in self.tracked_members:
-                    tracked_member.dead = False
+                    if tracked_member.state == "dead":
+                        tracked_member.state = "alive"
                 await self.set_muting(False)
                 await self.update_control_panel()
             # TODO: fetch_message() exception handling (idk if it matters in here tho)
