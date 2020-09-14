@@ -4,10 +4,8 @@ TODOs in code
 
 open source:
     document all documentable things with docstrings or whatever they're called
-    link to more similar bots in readme
-    mirror to github
 
-OCR scan screen
+OCR scan screen mode (a binary that communicates with the bot so you don't have to run the whole bot locally?)
 
 add reindex tracked members command:
     resets the tracked members indexes in control panel
@@ -52,8 +50,6 @@ reaction: admin-takeover
     AKA among:takeover
     only act when admin reacts/sends commands
     needs a prepared admin role set up with among:admin_role (actually maybe the API provides a way to see if the user is admin)
-
-add a way to get to the source code (through a command? through among:help?)
 
 low priority:
     on startup clear all invalid reactions on old control panel
