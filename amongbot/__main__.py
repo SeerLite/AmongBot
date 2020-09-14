@@ -4,13 +4,14 @@ import json
 
 from .client import Client
 
-# load token from env, fall back to .token file
-if not (TOKEN := os.getenv("DISCORD_TOKEN")):
+# load token from env, fall back to token.txt
+if not (token := os.getenv("DISCORD_TOKEN")):
     try:
         with open("token.txt") as token_file:
-            TOKEN = token_file.read()
+            token = token_file.read()
     except FileNotFoundError:
-        print("No .token file found! Please create it or pass it through DISCORD_TOKEN environment variable.")
+        # TODO: auto-create token.txt?
+        print("No token.txt file found! Please create it and paste your token, or pass it through the DISCORD_TOKEN environment variable.")
         sys.exit(1)
 
 
@@ -26,4 +27,4 @@ except json.JSONDecodeError:
     else:
         raise
 
-client.run(TOKEN)
+client.run(token)
