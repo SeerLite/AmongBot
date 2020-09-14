@@ -7,8 +7,11 @@ open source:
 
 OCR scan screen mode (a binary that communicates with the bot so you don't have to run the whole bot locally?)
 
+easier `tldr`-like instructions in control panel for its usage
+
 add reindex tracked members command:
     resets the tracked members indexes in control panel
+    moves all AWAY members to the bottom?
     reaction should be the one currently for "reset dead", and reset dead should have another emoji
     i should probably re-add .list property to tracked members so we can still track members that have left muted (to unmute them when then join a voice channel) but hide them in the control panel
 
