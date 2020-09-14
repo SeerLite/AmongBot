@@ -14,6 +14,7 @@ Please keep in mind this bot is still work in progress. If you need a bot that's
 1. Create a Discord application and bot.
 2. Put the bot token in a file called token.txt.
 3. Run the bot from the command line:
+
     Linux/Unix:
     ```
     python3 -m amongbot
