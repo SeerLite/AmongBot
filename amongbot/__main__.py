@@ -5,7 +5,8 @@ import json
 from .client import Client
 
 # load token from env, fall back to token.txt
-if not (token := os.getenv("DISCORD_TOKEN")):
+token = os.getenv("DISCORD_TOKEN")
+if not token:
     try:
         with open("token.txt") as token_file:
             token = token_file.read()

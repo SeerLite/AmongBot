@@ -1,6 +1,6 @@
 This file is for my own quick note-taking. Don't expect it to be organized or even make sense at times.
 
-TODOs in code
+use venv
 
 important: can i subclass discord.Member to make TrackedMember?
 > i have no idea what im doing <

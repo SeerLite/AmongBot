@@ -109,11 +109,14 @@ class BotPresence:
     async def set_excluded_roles(self, excluded_roles):
         if self._excluded_roles == excluded_roles:
             raise SameValueError(excluded_roles)
-        if new_excludes := excluded_roles.difference(self._excluded_roles):  # only if there's _new_ roles
+
+        if excluded_roles.difference(self._excluded_roles):  # only if there's _new_ roles
+            new_excludes = excluded_roles.difference(self._excluded_roles)
             # unmute and untrack all members from newly excluded role
             await asyncio.gather(*(tracked_member.set_mute(False) for tracked_member in self.tracked_members if any((role in new_excludes for role in tracked_member.member.roles))))  # TODO: maybe make a function/method for the generator here?
             self.tracked_members = [tracked_member for tracked_member in self.tracked_members if not any((role in new_excludes for role in tracked_member.member.roles))]
-        elif new_unexcludes := self._excluded_roles.union(excluded_roles):  # only if there's _less_ roles
+        elif self._excluded_roles.union(excluded_roles):  # only if there's _less_ roles
+            new_unexcludes = self._excluded_roles.union(excluded_roles)
             # track and mute newly unexcluded roles
             for member in self.voice_channel.members:
                 if any(role in new_unexcludes for role in member.roles):
