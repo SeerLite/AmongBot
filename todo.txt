@@ -3,6 +3,7 @@ This file is for my own quick note-taking. Don't expect it to be organized or ev
 TODOs in code
 
 important: can i subclass discord.Member to make TrackedMember?
+> i have no idea what im doing <
 
 open source:
     document all documentable things with docstrings or whatever they're called
