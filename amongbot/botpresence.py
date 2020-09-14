@@ -272,9 +272,8 @@ class BotPresence:
                         await self.text_channel.send("Error! None of the mentioned roles were excluded.")
                 else:
                     await self.text_channel.send("Error! No role mentions detected!\nUsage: `among:excluderole <role mention>...`")
-            elif all(received_index.isdigit() or (received_index and message.content[0] == "-" and received_index[1:].isdigit()) for received_index in message.content.split(" ")):
-                await message.delete()
-                for received_index in message.content.split(" "):
+            elif all(received_index.isdigit() or (received_index and received_index[0] == "-" and received_index[1:].isdigit()) for received_index in message.content.split(" ")):
+                for received_index in set(message.content.split(" ")):
                     index = abs(int(received_index)) - 1
                     if index in range(len(self.tracked_members)):
                         if int(received_index) > 0:
@@ -284,6 +283,7 @@ class BotPresence:
                             self.tracked_members[index].ignore = not self.tracked_members[index].ignore
                 await self.set_muting(self.muting)
                 await self.update_control_panel()
+                await message.delete()
 
     async def send_control_panel(self):
         if self.control_panel:

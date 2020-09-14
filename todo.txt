@@ -12,6 +12,8 @@ OCR scan screen mode (a binary that communicates with the bot so you don't have 
 
 easier `tldr`-like instructions in control panel for its usage
 
+make TrackedMember.ignore and .dead the same attribute. there's no reason a member could be dead and ignored at the same time
+
 add reindex tracked members command:
     resets the tracked members indexes in control panel
     moves all AWAY members to the bottom?
