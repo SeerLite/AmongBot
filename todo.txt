@@ -2,14 +2,14 @@ This file is for my own quick note-taking. Don't expect it to be organized or ev
 
 TODOs in code
 
+important: can i subclass discord.Member to make TrackedMember?
+
 open source:
     document all documentable things with docstrings or whatever they're called
 
 OCR scan screen mode (a binary that communicates with the bot so you don't have to run the whole bot locally?)
 
 easier `tldr`-like instructions in control panel for its usage
-
-use lock.locked() to check if muting is in progress, in on_voice_state_update
 
 add reindex tracked members command:
     resets the tracked members indexes in control panel

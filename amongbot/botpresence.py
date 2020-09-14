@@ -282,6 +282,9 @@ class BotPresence:
     async def on_voice_state_update(self, member, before, after):
         if member.guild != self.guild or self.voice_channel is None or any((role in self.excluded_roles for role in member.roles)):
             return
+
+        muting_in_progress = self.muting_lock.locked()
+
         if member == self.mimic:
             if after.channel == self.voice_channel:  # Status changed inside channel
                 if not before.self_deaf and after.self_deaf:    # Deafened
@@ -295,6 +298,7 @@ class BotPresence:
             else:                                    # Whoops, not in channel anymore?
                 await self.set_mimic(None)
                 await self.update_control_panel()
+
         if before.channel != after.channel:
             if after.channel == self.voice_channel:
                 if member not in (tracked_member.member for tracked_member in self.tracked_members):
@@ -305,6 +309,13 @@ class BotPresence:
                     await self.set_muting(False)
                     self.tracked_members = []
                 await self.update_control_panel()
+
+        if before.mute != after.mute and not muting_in_progress and after.channel == self.voice_channel:
+            for tracked_member in self.tracked_members:
+                if member == tracked_member.member:
+                    tracked_member.ignore = True
+                    await self.update_control_panel()
+                    break
 
     async def on_reaction_add(self, emoji, message_id, member):
         if member.guild != self.guild or self.control_panel is None:
