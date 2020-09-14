@@ -250,6 +250,7 @@ class BotPresence:
     async def update_control_panel(self):
         if self.control_panel is None:
             return
+        # TODO: maybe move this to another file, somehow? also, allowing different languages would be cool
         control_panel_text = (
             f"**Muting:** `{'Yes' if self.muting else 'No'}`\n"
             f"**Tracked users:**\n"
@@ -267,9 +268,9 @@ class BotPresence:
                                "Send the index of a member with a dash prepended to ignore/unignore them (e.g `-1`). New members are ignored by default.")
         await self.control_panel.edit(content=control_panel_text)
 
-    async def set_mimic(self, member):  # TODO: use TrackedMember instead of Member
+    async def set_mimic(self, member):
         if member:
-            if member.voice and member.voice.channel == self.voice_channel:  # TODO: and make this use is_in_vc
+            if member.voice and member.voice.channel == self.voice_channel:
                 self.mimic = member
                 await self.set_muting(self.muting)  # TODO: maybe set_muting() with no args should default to current mute (or maybe set_muting shouldn't do all it does? (or maybe it should be renamed??))
                 return True  # Remove return values and use exceptions?
