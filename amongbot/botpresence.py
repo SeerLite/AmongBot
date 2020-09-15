@@ -29,6 +29,7 @@ class TrackedMember:
                 if self.member.voice.mute != self._mute:
                     await self.member.edit(mute=self._mute)
 
+    # TODO: i think this is dumb, should probably remove it or make it a function()()()()
     @property
     def is_in_vc(self):
         if self.member.voice and self.member.voice.channel == self.presence.voice_channel:
@@ -36,6 +37,61 @@ class TrackedMember:
         else:
             return False
 
+
+class ControlPanel:
+    def __init__(self, presence, message=None):
+        self.presence = presence
+        self.message = message
+
+    @classmethod
+    async def from_id(cls, id, presence):
+        self = ControlPanel(presence)
+        self.message = await presence.text_channel.fetch_message(id)  # NOTE: handle exceptions externally
+
+        await self.reset_reactions()
+        await self.update()
+
+        return self
+
+    async def send_new(self):
+        if self.message:
+            await self.message.delete()
+
+        self.message = await self.presence.text_channel.send("Loading...")
+        await self.presence.save()
+        await self.reset_reactions()
+        await self.update()
+
+    async def reset_reactions(self):
+        await self.message.clear_reactions()
+        await self.message.add_reaction('🔈')
+        await self.message.add_reaction('©')
+        await self.message.add_reaction('🔄')
+
+    async def update(self):
+        if self.message is None:
+            return
+
+        # TODO: maybe move this to another file, somehow? also, allowing different languages would be cool
+        text = (
+            f"**Muting:** `{'Yes' if self.presence.muting else 'No'}`\n"
+            f"**Tracked users:**\n"
+        )
+        for tracked_member in self.presence.tracked_members:
+            text += (f"`{' --' if not tracked_member.is_in_vc else str(self.presence.tracked_members.index(tracked_member) + 1).rjust(3)}. "
+                     f"{tracked_member.member.display_name.ljust(max(len(tracked_member.member.display_name) for tracked_member in self.presence.tracked_members))} "
+                     f"{ ('(' + tracked_member.state.upper() + ')').rjust(9)}` "
+                     f"{tracked_member.member.mention}\n")
+
+        if self.presence.mimic:
+            text += f"**Mimicking:** {self.presence.mimic.mention}. Quickly deafen and undeafen yourself to toggle global mute.\n"
+        else:
+            text += "Not mimicking! React with :copyright: to mimic you!\n"
+
+        text += ("Send the index of a member to set them as dead/alive (e.g `1`). React with :arrows_counterclockwise: to reset dead members.\n"
+                 "Send the index of a member with a dash prepended to ignore/unignore them (e.g `-1`). New members are ignored by default.")
+
+        await self.message.edit(content=text)
 
 class BotPresence:
     @classmethod
@@ -46,21 +102,13 @@ class BotPresence:
         self.client = client
         self._text_channel = None
         self._voice_channel = None
-        self.control_panel = None
+        self.control_panel = ControlPanel(self)
 
         if text_channel_id:
             self._text_channel = self.guild.get_channel(int(text_channel_id))
         if voice_channel_id:
             self._voice_channel = self.guild.get_channel(int(voice_channel_id))
-        if control_panel_id:
-            try:
-                self.control_panel = await self.text_channel.fetch_message(int(control_panel_id))
-                await self.control_panel.clear_reactions()
-                await self.control_panel.add_reaction('🔈')
-                await self.control_panel.add_reaction('©')
-                await self.control_panel.add_reaction('🔄')
-            except discord.HTTPException:
-                pass
+
         self._excluded_roles = frozenset(self.guild.get_role(int(id)) for id in excluded_roles_ids)  # frozen cause we're only assigning anyway
         self._muting = False
         self.muting_lock = asyncio.Lock()
@@ -74,8 +122,16 @@ class BotPresence:
         if self.text_channel and self.voice_channel:
             await self.track_current_voice()
 
-        if self.control_panel:
-            await self.update_control_panel()
+            if control_panel_id:
+                try:
+                    self.control_panel.message = await self.text_channel.fetch_message(int(control_panel_id))
+                    await self.control_panel.reset_reactions()
+                    await self.control_panel.update()
+                except discord.HTTPException:
+                    pass
+
+        if self.control_panel.message:
+            await self.control_panel.update()
 
         await self.save()
         return self
@@ -140,7 +196,7 @@ class BotPresence:
             if not str(self.guild.id) in self.client.save_data:
                 self.client.save_data[str(self.guild.id)] = {}
 
-            for name, value in (("text", self.text_channel), ("voice", self.voice_channel), ("control", self.control_panel)):
+            for name, value in (("text", self.text_channel), ("voice", self.voice_channel), ("control", self.control_panel.message)):
                 if value:
                     self.client.save_data[str(self.guild.id)][name] = value.id
                 else:
@@ -191,20 +247,20 @@ class BotPresence:
                     await self.set_voice_channel(message.author.voice.channel)
                     await self.track_current_voice()
                     await self.text_channel.send(f"All good! Listening for commands only on {self.text_channel.mention} and tracking {self.voice_channel.name}.")
-                    await self.send_control_panel()
+                    await self.control_panel.send_new()
                 except SameValueError as error:
                     if error.args[0] == message.channel:
                         try:
                             await self.set_voice_channel(message.author.voice.channel)
                             await self.track_current_voice()
                             await self.text_channel.send(f"All good! Listening for commands only on {self.text_channel.mention} and tracking {self.voice_channel.name}.")
-                            await self.send_control_panel()
+                            await self.control_panel.send_new()
                         except SameValueError as error:
                             if error.args[0] == message.author.voice.channel:
                                 await self.text_channel.send(f"Already set up! This is {self.client.user.name}'s channel and currently tracking {self.voice_channel.name}.")
                     elif error.args[0] == message.author.voice.channel:
                         await self.text_channel.send(f"All good! Listening for commands only on {self.text_channel.mention} and tracking {self.voice_channel.name}.")
-                        await self.send_control_panel()
+                        await self.control_panel.send_new()
             else:
                 await message.channel.send(f"Error! User {message.author.mention} not in any voice channel on this server! Please join a voice channel first!")
         elif message.content == "among:text":
@@ -213,7 +269,7 @@ class BotPresence:
                 await self.text_channel.send(f"Current channel {self.text_channel.mention} set as {self.client.user.name}'s channel!\n"
                                              f"Now accepting commands here.")
                 if self.voice_channel:
-                    await self.send_control_panel()
+                    await self.control_panel.send_new()
             except SameValueError:
                 await self.text_channel.send(f"Error! This channel is already {self.client.user.name}'s channel.")
         elif message.channel == self.text_channel:
@@ -223,12 +279,12 @@ class BotPresence:
                         await self.set_voice_channel(message.author.voice.channel)
                         await self.track_current_voice()
                         await self.text_channel.send(f"{self.voice_channel.name} set as tracked voice channel!")
-                        await self.send_control_panel()
+                        await self.control_panel.send_new()
                     else:
                         await self.set_voice_channel(None)
-                        if self.control_panel:
-                            await self.control_panel.delete()
-                            self.control_panel = None
+                        if self.control_panel.message:
+                            await self.control_panel.message.delete()
+                            self.control_panel.message = None
                             await self.save()
                         await self.text_channel.send(f"User {message.author.mention} not in any voice channel on this server. Stopped tracking voice channel.")
                 except SameValueError:
@@ -242,7 +298,7 @@ class BotPresence:
                     try:
                         await self.set_excluded_roles(self.excluded_roles.union(message.role_mentions))
                         await self.text_channel.send(f"Now excluding roles:\n{' '.join((role.mention for role in self.excluded_roles))}")
-                        await self.update_control_panel()
+                        await self.control_panel.update()
                     except SameValueError:
                         await self.text_channel.send("Error! All mentioned roles were already excluded.")
                 else:
@@ -255,7 +311,7 @@ class BotPresence:
                             await self.text_channel.send(f"Now excluding roles:\n{' '.join((role.mention for role in self.excluded_roles))}")
                         else:
                             await self.text_channel.send("No longer excluding any roles.")
-                        await self.update_control_panel()
+                        await self.control_panel.update()
                     except SameValueError:
                         await self.text_channel.send("Error! None of the mentioned roles were excluded.")
                 else:
@@ -275,39 +331,8 @@ class BotPresence:
                             elif self.tracked_members[index].state == "dead":
                                 self.tracked_members[index].state = "alive"
                 await self.set_muting(self.muting)
-                await self.update_control_panel()
+                await self.control_panel.update()
                 await message.delete()
-
-    async def send_control_panel(self):
-        if self.control_panel:
-            await self.control_panel.delete()
-        self.control_panel = await self.text_channel.send("Loading...")
-        await self.save()
-        await self.control_panel.add_reaction('🔈')
-        await self.control_panel.add_reaction('©')
-        await self.control_panel.add_reaction('🔄')
-        await self.update_control_panel()
-
-    async def update_control_panel(self):
-        if self.control_panel is None:
-            return
-        # TODO: maybe move this to another file, somehow? also, allowing different languages would be cool
-        control_panel_text = (
-            f"**Muting:** `{'Yes' if self.muting else 'No'}`\n"
-            f"**Tracked users:**\n"
-        )
-        for tracked_member in self.tracked_members:
-            control_panel_text += (f"`{' --' if not tracked_member.is_in_vc else str(self.tracked_members.index(tracked_member) + 1).rjust(3)}. "
-                                   f"{tracked_member.member.display_name.ljust(max(len(tracked_member.member.display_name) for tracked_member in self.tracked_members))} "
-                                   f"{ ('(' + tracked_member.state.upper() + ')').rjust(9)}` "
-                                   f"{tracked_member.member.mention}\n")
-        if self.mimic:
-            control_panel_text += f"**Mimicking:** {self.mimic.mention}. Quickly deafen and undeafen yourself to toggle global mute.\n"
-        else:
-            control_panel_text += "Not mimicking! React with :copyright: to mimic you!\n"
-        control_panel_text += ("Send the index of a member to set them as dead/alive (e.g `1`). React with :arrows_counterclockwise: to reset dead members.\n"
-                               "Send the index of a member with a dash prepended to ignore/unignore them (e.g `-1`). New members are ignored by default.")
-        await self.control_panel.edit(content=control_panel_text)
 
     async def set_mimic(self, member):
         if member:
@@ -334,52 +359,52 @@ class BotPresence:
                     if (timeit.default_timer() - self.mimic_deafen_time) < self.mimic_undeafen_timeout:
                         if (timeit.default_timer() - self.last_mute_time) > self.mute_delay:
                             await self.set_muting(not self.muting)
-                            await self.update_control_panel()
+                            await self.control_panel.update()
                             self.last_mute_time = timeit.default_timer()
             else:                                    # Whoops, not in channel anymore?
                 await self.set_mimic(None)
-                await self.update_control_panel()
+                await self.control_panel.update()
 
         if before.channel != after.channel:
             if after.channel == self.voice_channel:
                 if member not in (tracked_member.member for tracked_member in self.tracked_members):
                     self.tracked_members.append(TrackedMember(member, self, ignore=True if member.voice.mute != self.muting else False))  # ignore new members that don't match current mute state
-                await self.update_control_panel()
+                await self.control_panel.update()
             elif after.channel != self.voice_channel:
                 if not any((tracked_member.is_in_vc for tracked_member in self.tracked_members)):  # reset indexes when all managed members leave
                     await self.set_muting(False)
                     self.tracked_members = []
-                await self.update_control_panel()
+                await self.control_panel.update()
 
         if before.mute != after.mute and not muting_in_progress and after.channel == self.voice_channel:
             for tracked_member in self.tracked_members:
                 if member == tracked_member.member:
                     tracked_member.state = "ignored"
-                    await self.update_control_panel()
+                    await self.control_panel.update()
                     break
 
     async def on_reaction_add(self, emoji, message_id, member):
-        if member.guild != self.guild or self.control_panel is None:
+        if member.guild != self.guild or self.control_panel.message is None:
             return
-        if message_id == self.control_panel.id:  # TODO: why doesn't this work without .id?
+        if message_id == self.control_panel.message.id:  # TODO: why doesn't this work without .id?
             if emoji.name == '🔈':
                 if (timeit.default_timer() - self.last_mute_time) > self.mute_delay:  # TODO move this into set_muting() but don't call set_muting() from places a user wouldn't
                     await self.set_muting(not self.muting)
-                    await self.update_control_panel()
+                    await self.control_panel.update()
                     self.last_mute_time = timeit.default_timer()
             elif emoji.name == '©':
                 if self.mimic is None:
                     await self.set_mimic(member)
-                    await self.update_control_panel()
+                    await self.control_panel.update()
                 elif member == self.mimic:
                     await self.set_mimic(None)
-                    await self.update_control_panel()
+                    await self.control_panel.update()
             elif emoji.name == '🔄':
                 for tracked_member in self.tracked_members:
                     if tracked_member.state == "dead":
                         tracked_member.state = "alive"
                 await self.set_muting(False)
-                await self.update_control_panel()
+                await self.control_panel.update()
             # TODO: fetch_message() exception handling (idk if it matters in here tho)
             message = await self.text_channel.fetch_message(message_id)
             await message.remove_reaction(emoji, member)

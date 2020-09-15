@@ -1,11 +1,13 @@
 This file is for my own quick note-taking. Don't expect it to be organized or even make sense at times.
+> i have no idea what im doing <
 
 use venv
 
-test performance benefits of pypy
-
-important: can i subclass discord.Member to make TrackedMember?
-> i have no idea what im doing <
+i saw no direct improvements of making control panel a class. it's still the same methods, but with a different name and a different object
+also, there's no way to create "actions" for reactions inside the controlpanel class without using stuff by the BotPresence class directly.
+maybe it was better to just leave it as BotPresence methods.
+basically, i still don't understand the benefits of OOP.
+i should probably look around some bigger python projects and see how they do this kind of stuff
 
 open source:
     document all documentable things with docstrings or whatever they're called
@@ -57,3 +59,4 @@ reaction: admin-takeover
     only act when admin reacts/sends commands
     needs a prepared admin role set up with among:admin_role (actually maybe the API provides a way to see if the user is admin)
 
+test performance benefits of pypy (why?)
