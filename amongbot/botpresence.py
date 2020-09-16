@@ -361,6 +361,7 @@ class BotPresence:
                             await self.set_muting(not self.muting)
                             await self.control_panel.update()
                             self.last_mute_time = timeit.default_timer()
+                            return  # because for some reason member.after is changed to muted (from outside) but muting_in_progress is still false
             else:                                    # Whoops, not in channel anymore?
                 await self.set_mimic(None)
                 await self.control_panel.update()
@@ -376,7 +377,7 @@ class BotPresence:
                     self.tracked_members = []
                 await self.control_panel.update()
 
-        if before.mute != after.mute and not muting_in_progress and after.channel == self.voice_channel:
+        if before.mute != after.mute and after.channel == self.voice_channel and not muting_in_progress:
             for tracked_member in self.tracked_members:
                 if member == tracked_member.member:
                     tracked_member.state = "ignored"
